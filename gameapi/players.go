@@ -41,6 +41,7 @@ func (p *registeredPlayers) handle(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
+		setJSONContentType(w, http.StatusOK)
 		w.Write(b)
 	}
 }

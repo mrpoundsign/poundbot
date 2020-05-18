@@ -70,10 +70,11 @@ func (mh *messages) rootHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	setJSONContentType(w, http.StatusOK)
 	w.Write(b)
 }
 
-// channelHandler manages Rust <-> discord messages requests and logging
+// channelHandler manages Game -> discord messages requests and logging
 func (mh *messages) channelHandler(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 

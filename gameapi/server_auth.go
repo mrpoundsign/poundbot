@@ -8,6 +8,7 @@ import (
 
 	"github.com/blang/semver"
 	"github.com/poundbot/poundbot/storage"
+	"github.com/poundbot/poundbot/types"
 )
 
 type serverAuth struct {
@@ -21,27 +22,36 @@ func (sa serverAuth) handle(next http.Handler) http.Handler {
 		func(w http.ResponseWriter, r *http.Request) {
 			version, err := semver.Make(r.Header.Get("X-PoundBotConnector-Version"))
 			if err != nil {
-				w.WriteHeader(http.StatusBadRequest)
-				w.Write([]byte("Could not read PoundBot version. Please download the latest version at" + upgradeURL))
+				handleError(w, types.RESTError{
+					StatusCode: http.StatusBadRequest,
+					Error:      "PoundBot must be updated. Please download the latest version at" + upgradeURL,
+				})
 				return
 			}
 			if version.LT(minVersion) {
-				w.WriteHeader(http.StatusBadRequest)
-				w.Write([]byte("PoundBot must be updated. Please download the latest version at" + upgradeURL))
+				handleError(w, types.RESTError{
+					StatusCode: http.StatusBadRequest,
+					Error:      "PoundBot must be updated. Please download the latest version at" + upgradeURL,
+				})
 				return
 			}
 
 			s := strings.SplitN(r.Header.Get("Authorization"), " ", 2)
 			if len(s) != 2 {
-				w.WriteHeader(http.StatusBadRequest)
+				handleError(w, types.RESTError{
+					StatusCode: http.StatusUnauthorized,
+					Error:      "Authorization header is incorrect.",
+				})
 				return
 			}
 
 			game := r.Header.Get("X-PoundBot-Game")
 
 			if len(game) == 0 {
-				w.WriteHeader(http.StatusBadRequest)
-				w.Write([]byte("Missing X-PoundBot-Game header."))
+				handleError(w, types.RESTError{
+					StatusCode: http.StatusBadRequest,
+					Error:      "Missing X-PoundBot-Game header.",
+				})
 				return
 			}
 
@@ -53,7 +63,12 @@ func (sa serverAuth) handle(next http.Handler) http.Handler {
 
 			err = sa.as.Touch(s[1])
 			if err != nil {
-				log.Printf("Error updating %s:%s touch", account.ID, s[1])
+				handleError(w, types.RESTError{
+					StatusCode: http.StatusInternalServerError,
+					Error:      "Error updating server account",
+				})
+				log.Printf("Error updating %s (touch)", account.ID)
+				return
 			}
 
 			ctx := context.WithValue(r.Context(), contextKeyServerKey, s[1])

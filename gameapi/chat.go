@@ -71,7 +71,7 @@ func (c *chat) handle(w http.ResponseWriter, r *http.Request) {
 	case http.MethodGet:
 		m, found := c.cqs.GetGameServerMessage(sc.serverKey, "chat", c.timeout)
 		if !found {
-			w.WriteHeader(http.StatusNoContent)
+			setJSONContentType(w, http.StatusNoContent)
 			return
 		}
 
@@ -80,6 +80,8 @@ func (c *chat) handle(w http.ResponseWriter, r *http.Request) {
 			log.Printf("[%s] %s", sc.requestUUID, err.Error())
 			return
 		}
+
+		setJSONContentType(w, http.StatusOK)
 
 		w.Write(b)
 	}

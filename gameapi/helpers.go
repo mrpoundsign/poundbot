@@ -9,7 +9,7 @@ import (
 
 // handleError is a generic JSON HTTP error response
 func handleError(w http.ResponseWriter, restError types.RESTError) error {
-	w.WriteHeader(restError.StatusCode)
+	setJSONContentType(w, restError.StatusCode)
 	return json.NewEncoder(w).Encode(restError)
 }
 
@@ -18,4 +18,9 @@ func methodNotAllowed(w http.ResponseWriter) {
 		StatusCode: http.StatusMethodNotAllowed,
 		Error:      "Method not allowed",
 	})
+}
+
+func setJSONContentType(w http.ResponseWriter, status int) {
+	w.WriteHeader(status)
+	w.Header().Set("content-type", "application/json; cahrset=utf-8")
 }
