@@ -427,7 +427,7 @@ func instructServer(parts []string, channelID, guildID string, account types.Acc
 				message: localizer.MustLocalize(&i18n.LocalizeConfig{
 					DefaultMessage: &i18n.Message{
 						ID:    "InstructCommandServerRaidCooldownUsage",
-						Other: "Usage: `server [id] raidnotificationfrequency <duration>`",
+						Other: "Usage: `server [id] raidcooldown <duration>`",
 					},
 				}),
 			}

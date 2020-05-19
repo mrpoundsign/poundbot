@@ -19,8 +19,8 @@ hash = "sha1-e0eacef258490c7363c083aa95d0c932829a99b7"
 other = "RaidCooldown for {{.ID}}:{{.Name}} is now {{.RaidCooldown}}"
 
 [InstructCommandServerRaidCooldownUsage]
-hash = "sha1-29bb72e62e1d546c956c803b26754ffc5333b9e8"
-other = "Usage: `server [id] raidnotificationfrequency <duration>`"
+hash = "sha1-0fba33a2a8b55ba5b8715782e11c694691acb703"
+other = "Usage: `server [id] raidcooldown <duration>`"
 
 [InstructCommandStatus]
 hash = "sha1-48a3661d846478fa991a825ebd10b78671444b5b"
