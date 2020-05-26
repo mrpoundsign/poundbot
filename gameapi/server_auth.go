@@ -7,17 +7,27 @@ import (
 	"context"
 
 	"github.com/blang/semver"
-	"github.com/poundbot/poundbot/storage"
 	"github.com/poundbot/poundbot/types"
 )
 
+type serverAuthenticator interface {
+	GetByServerKey(serverKey string) (types.Account, error)
+	Touch(serverKey string) error
+}
+
+func newServerAuth(as serverAuthenticator) *serverAuth {
+	return &serverAuth{
+		as:         as,
+		minVersion: semver.Version{Major: 2},
+	}
+}
+
 type serverAuth struct {
-	as storage.AccountsStore
+	as         serverAuthenticator
+	minVersion semver.Version
 }
 
 func (sa serverAuth) handle(next http.Handler) http.Handler {
-	minVersion := semver.Version{Major: 2}
-
 	return http.HandlerFunc(
 		func(w http.ResponseWriter, r *http.Request) {
 			version, err := semver.Make(r.Header.Get("X-PoundBotConnector-Version"))
@@ -28,7 +38,7 @@ func (sa serverAuth) handle(next http.Handler) http.Handler {
 				})
 				return
 			}
-			if version.LT(minVersion) {
+			if version.LT(sa.minVersion) {
 				handleError(w, types.RESTError{
 					StatusCode: http.StatusBadRequest,
 					Error:      "PoundBot must be updated. Please download the latest version at" + upgradeURL,

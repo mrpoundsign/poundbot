@@ -6,18 +6,20 @@ import (
 	"context"
 
 	"github.com/gofrs/uuid"
+	"github.com/poundbot/poundbot/types"
 )
 
-type requestUUID struct{}
-
-func (ru requestUUID) handle(next http.Handler) http.Handler {
+func requestUUID(next http.Handler) http.Handler {
 	return http.HandlerFunc(
 		func(w http.ResponseWriter, r *http.Request) {
 			requestUUID := r.Header.Get("X-Request-ID")
 			if len(requestUUID) == 0 {
 				rUUID, err := uuid.NewV4()
 				if err != nil {
-					http.Error(w, "could not create UUID", http.StatusInternalServerError)
+					handleError(w, types.RESTError{
+						StatusCode: http.StatusInternalServerError,
+						Error:      "could not create UUID",
+					})
 					return
 				}
 				requestUUID = rUUID.String()
