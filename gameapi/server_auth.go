@@ -7,11 +7,11 @@ import (
 	"context"
 
 	"github.com/blang/semver"
-	"github.com/poundbot/poundbot/types"
+	"github.com/poundbot/poundbot/pkg/models"
 )
 
 type serverAuthenticator interface {
-	GetByServerKey(serverKey string) (types.Account, error)
+	GetByServerKey(serverKey string) (models.Account, error)
 	Touch(serverKey string) error
 }
 
@@ -32,14 +32,14 @@ func (sa serverAuth) handle(next http.Handler) http.Handler {
 		func(w http.ResponseWriter, r *http.Request) {
 			version, err := semver.Make(r.Header.Get("X-PoundBotConnector-Version"))
 			if err != nil {
-				handleError(w, types.RESTError{
+				handleError(w, models.RESTError{
 					StatusCode: http.StatusBadRequest,
 					Error:      "PoundBot must be updated. Please download the latest version at" + upgradeURL,
 				})
 				return
 			}
 			if version.LT(sa.minVersion) {
-				handleError(w, types.RESTError{
+				handleError(w, models.RESTError{
 					StatusCode: http.StatusBadRequest,
 					Error:      "PoundBot must be updated. Please download the latest version at" + upgradeURL,
 				})
@@ -48,7 +48,7 @@ func (sa serverAuth) handle(next http.Handler) http.Handler {
 
 			s := strings.SplitN(r.Header.Get("Authorization"), " ", 2)
 			if len(s) != 2 {
-				handleError(w, types.RESTError{
+				handleError(w, models.RESTError{
 					StatusCode: http.StatusUnauthorized,
 					Error:      "Authorization header is incorrect.",
 				})
@@ -58,7 +58,7 @@ func (sa serverAuth) handle(next http.Handler) http.Handler {
 			game := r.Header.Get("X-PoundBot-Game")
 
 			if len(game) == 0 {
-				handleError(w, types.RESTError{
+				handleError(w, models.RESTError{
 					StatusCode: http.StatusBadRequest,
 					Error:      "Missing X-PoundBot-Game header.",
 				})
@@ -73,7 +73,7 @@ func (sa serverAuth) handle(next http.Handler) http.Handler {
 
 			err = sa.as.Touch(s[1])
 			if err != nil {
-				handleError(w, types.RESTError{
+				handleError(w, models.RESTError{
 					StatusCode: http.StatusInternalServerError,
 					Error:      "Error updating server account",
 				})

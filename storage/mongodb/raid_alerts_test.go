@@ -7,8 +7,8 @@ import (
 	"time"
 
 	"github.com/globalsign/mgo/bson"
+	"github.com/poundbot/poundbot/pkg/models"
 	"github.com/poundbot/poundbot/storage/mongodb/mongotest"
-	"github.com/poundbot/poundbot/types"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -28,12 +28,12 @@ func TestRaidAlerts_AddInfo(t *testing.T) {
 	type args struct {
 		alertIn    time.Duration
 		validUntil time.Duration
-		ed         types.EntityDeath
+		ed         models.EntityDeath
 	}
 	tests := []struct {
 		name          string
 		args          args
-		want          types.RaidAlert
+		want          models.RaidAlert
 		atTimeNew     bool
 		validUntilNew bool
 		wantCount     int
@@ -44,9 +44,9 @@ func TestRaidAlerts_AddInfo(t *testing.T) {
 			args: args{
 				alertIn:    time.Minute,
 				validUntil: time.Hour,
-				ed:         types.EntityDeath{ServerKey: "abcd", Name: "thing", GridPos: "D7", OwnerIDs: []string{"1", "2"}},
+				ed:         models.EntityDeath{ServerKey: "abcd", Name: "thing", GridPos: "D7", OwnerIDs: []string{"1", "2"}},
 			},
-			want: types.RaidAlert{
+			want: models.RaidAlert{
 				ID:            oid,
 				GridPositions: []string{"D8", "D7"},
 				PlayerID:      "2",
@@ -60,9 +60,9 @@ func TestRaidAlerts_AddInfo(t *testing.T) {
 			args: args{
 				alertIn:    time.Minute,
 				validUntil: time.Hour,
-				ed:         types.EntityDeath{ServerKey: "abcde", Name: "thing", GridPos: "D7", OwnerIDs: []string{"1", "3"}},
+				ed:         models.EntityDeath{ServerKey: "abcde", Name: "thing", GridPos: "D7", OwnerIDs: []string{"1", "3"}},
 			},
-			want: types.RaidAlert{
+			want: models.RaidAlert{
 				GridPositions: []string{"D7"},
 				PlayerID:      "3",
 				Items:         map[string]int{"thing": 1},
@@ -75,9 +75,9 @@ func TestRaidAlerts_AddInfo(t *testing.T) {
 		{
 			name: "noop",
 			args: args{
-				alertIn: time.Minute, ed: types.EntityDeath{ServerKey: "abcde", Name: "thing", GridPos: "D7", OwnerIDs: []string{"5"}},
+				alertIn: time.Minute, ed: models.EntityDeath{ServerKey: "abcde", Name: "thing", GridPos: "D7", OwnerIDs: []string{"5"}},
 			},
-			want: types.RaidAlert{
+			want: models.RaidAlert{
 				ID:            oid,
 				GridPositions: []string{"D8"},
 				PlayerID:      "2",
@@ -99,7 +99,7 @@ func TestRaidAlerts_AddInfo(t *testing.T) {
 
 			existingValidUntil := time.Now().UTC().Add(time.Hour).Truncate(time.Millisecond)
 
-			coll.C.Insert(types.RaidAlert{
+			coll.C.Insert(models.RaidAlert{
 				ID:            oid,
 				GridPositions: []string{"D8"},
 				PlayerID:      "2",
@@ -108,8 +108,8 @@ func TestRaidAlerts_AddInfo(t *testing.T) {
 				ValidUntil:    existingValidUntil,
 			})
 
-			usersColl.C.Insert(types.BaseUser{GamesInfo: types.GamesInfo{PlayerIDs: []string{"2"}}})
-			usersColl.C.Insert(types.BaseUser{GamesInfo: types.GamesInfo{PlayerIDs: []string{"3"}}})
+			usersColl.C.Insert(models.BaseUser{GamesInfo: models.GamesInfo{PlayerIDs: []string{"2"}}})
+			usersColl.C.Insert(models.BaseUser{GamesInfo: models.GamesInfo{PlayerIDs: []string{"3"}}})
 
 			if err := raidAlerts.AddInfo(tt.args.alertIn, tt.args.validUntil, tt.args.ed); (err != nil) != tt.wantErr {
 				t.Errorf("RaidAlerts.AddInfo() error = %v, wantErr %v", err, tt.wantErr)
@@ -122,7 +122,7 @@ func TestRaidAlerts_AddInfo(t *testing.T) {
 				}
 				assert.Equal(t, tt.wantCount, count)
 
-				var rn types.RaidAlert
+				var rn models.RaidAlert
 				err = coll.C.Find(bson.M{"playerid": tt.want.PlayerID}).One(&rn)
 				if err != nil {
 					t.Fatal(err)
@@ -156,17 +156,17 @@ func TestRaidAlerts_GetReady(t *testing.T) {
 
 	tests := []struct {
 		name    string
-		alerts  []types.RaidAlert
-		want    []types.RaidAlert
+		alerts  []models.RaidAlert
+		want    []models.RaidAlert
 		wantErr bool
 	}{
 		{
 			name: "one of two",
-			alerts: []types.RaidAlert{
+			alerts: []models.RaidAlert{
 				{ID: oid, PlayerID: "1001", AlertAt: time.Date(2014, 1, 31, 14, 50, 20, 720408938, time.UTC)},
 				{AlertAt: time.Now().UTC().Add(time.Hour)},
 			},
-			want: []types.RaidAlert{
+			want: []models.RaidAlert{
 				{
 					ID:            oid,
 					PlayerID:      "1001",
@@ -179,7 +179,7 @@ func TestRaidAlerts_GetReady(t *testing.T) {
 		},
 		{
 			name: "none",
-			alerts: []types.RaidAlert{
+			alerts: []models.RaidAlert{
 				{AlertAt: time.Now().UTC().Add(time.Hour)},
 				{AlertAt: time.Now().UTC().Add(time.Hour)},
 			},
@@ -211,15 +211,15 @@ func TestRaidAlerts_Remove(t *testing.T) {
 	oid := bson.NewObjectId()
 	tests := []struct {
 		name      string
-		alert     types.RaidAlert
-		alerts    []types.RaidAlert
+		alert     models.RaidAlert
+		alerts    []models.RaidAlert
 		wantCount int
 		wantErr   bool
 	}{
 		{
 			name:  "one of two",
-			alert: types.RaidAlert{ID: oid},
-			alerts: []types.RaidAlert{
+			alert: models.RaidAlert{ID: oid},
+			alerts: []models.RaidAlert{
 				{PlayerID: "1001"},
 				{ID: oid, PlayerID: "1002"},
 			},
@@ -227,8 +227,8 @@ func TestRaidAlerts_Remove(t *testing.T) {
 		},
 		{
 			name:  "none",
-			alert: types.RaidAlert{ID: oid, PlayerID: "1003"},
-			alerts: []types.RaidAlert{
+			alert: models.RaidAlert{ID: oid, PlayerID: "1003"},
+			alerts: []models.RaidAlert{
 				{PlayerID: "1001"},
 				{PlayerID: "1002"},
 			},

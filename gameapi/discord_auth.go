@@ -6,19 +6,19 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
-	"github.com/poundbot/poundbot/types"
+	"github.com/poundbot/poundbot/pkg/models"
 )
 
 type discordAuthenticator interface {
-	AuthDiscord(types.DiscordAuth)
+	AuthDiscord(models.DiscordAuth)
 }
 
 type daAuthUpserter interface {
-	Upsert(types.DiscordAuth) error
+	Upsert(models.DiscordAuth) error
 }
 
 type daUserGetter interface {
-	GetByPlayerID(string) (types.User, error)
+	GetByPlayerID(string) (models.User, error)
 }
 
 type discordAuth struct {
@@ -28,7 +28,7 @@ type discordAuth struct {
 }
 
 type discordAuthRequest struct {
-	types.DiscordAuth
+	models.DiscordAuth
 }
 
 func initDiscordAuth(api *mux.Router, path string, dau daAuthUpserter, us daUserGetter, dah discordAuthenticator) {
@@ -49,7 +49,7 @@ func (da *discordAuth) createDiscordAuth(w http.ResponseWriter, r *http.Request)
 
 	if err != nil {
 		hLog.WithError(err).Info("Can't find server")
-		handleError(w, types.RESTError{
+		handleError(w, models.RESTError{
 			Error:      "Error finding server identity",
 			StatusCode: http.StatusInternalServerError,
 		})
@@ -71,7 +71,7 @@ func (da *discordAuth) createDiscordAuth(w http.ResponseWriter, r *http.Request)
 
 	user, err := da.us.GetByPlayerID(dAuth.PlayerID)
 	if err == nil {
-		handleError(w, types.RESTError{
+		handleError(w, models.RESTError{
 			StatusCode: http.StatusConflict,
 			Error:      fmt.Sprintf("%s is already registered.", user.DiscordName),
 		})
@@ -98,7 +98,7 @@ func (da *discordAuth) checkPlayer(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		cpLog.WithError(err).Info("Can't find server")
-		handleError(w, types.RESTError{
+		handleError(w, models.RESTError{
 			Error:      "Error finding server identity",
 			StatusCode: http.StatusInternalServerError,
 		})

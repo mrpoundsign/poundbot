@@ -1,8 +1,8 @@
 package gameapi
 
 import (
+	"github.com/poundbot/poundbot/pkg/models"
 	"github.com/poundbot/poundbot/storage"
-	"github.com/poundbot/poundbot/types"
 	"github.com/sirupsen/logrus"
 )
 
@@ -23,12 +23,12 @@ type userUpserter interface {
 type AuthSaver struct {
 	das         discordAuthRemover
 	us          userUpserter
-	authSuccess <-chan types.DiscordAuth
+	authSuccess <-chan models.DiscordAuth
 	done        <-chan struct{}
 }
 
 // NewAuthSaver creates a new AuthSaver
-func newAuthSaver(da discordAuthRemover, u userUpserter, as <-chan types.DiscordAuth, done <-chan struct{}) *AuthSaver {
+func newAuthSaver(da discordAuthRemover, u userUpserter, as <-chan models.DiscordAuth, done <-chan struct{}) *AuthSaver {
 	return &AuthSaver{
 		das:         da,
 		us:          u,

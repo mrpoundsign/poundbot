@@ -12,7 +12,7 @@ import (
 	"github.com/gofrs/uuid"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 	"github.com/poundbot/poundbot/messages"
-	"github.com/poundbot/poundbot/types"
+	"github.com/poundbot/poundbot/pkg/models"
 	"github.com/sirupsen/logrus"
 )
 
@@ -30,12 +30,12 @@ type instructResponse struct {
 }
 
 type instructAccountUpdater interface {
-	AddServer(snowflake string, server types.AccountServer) error
-	UpdateServer(snowflake, oldKey string, server types.AccountServer) error
+	AddServer(snowflake string, server models.AccountServer) error
+	UpdateServer(snowflake, oldKey string, server models.AccountServer) error
 	RemoveServer(snowflake, serverKey string) error
 }
 
-func instruct(botID, channelID, authorID, message string, account types.Account, au instructAccountUpdater) instructResponse {
+func instruct(botID, channelID, authorID, message string, account models.Account, au instructAccountUpdater) instructResponse {
 	guildID := account.GuildSnowflake
 	adminIDs := account.GetAdminIDs()
 	iLog := log.WithFields(logrus.Fields{
@@ -125,7 +125,7 @@ func instruct(botID, channelID, authorID, message string, account types.Account,
 	}
 }
 
-func instructServer(parts []string, channelID, guildID string, account types.Account, au instructAccountUpdater) instructResponse {
+func instructServer(parts []string, channelID, guildID string, account models.Account, au instructAccountUpdater) instructResponse {
 	isLog := log.WithFields(logrus.Fields{"sys": "instructServer",
 		"gID":       guildID,
 		"cID":       channelID,
@@ -188,10 +188,10 @@ func instructServer(parts []string, channelID, guildID string, account types.Acc
 			isLog.WithError(err).Error("error creating uuid")
 			return instructResponse{responseType: instructResponseNone}
 		}
-		server := types.AccountServer{
+		server := models.AccountServer{
 			Name:         strings.Join(parts[1:], " "),
 			Key:          ruid.String(),
-			Channels:     []types.AccountServerChannel{{ChannelID: channelID, Tags: []string{"chat", "serverchat"}}},
+			Channels:     []models.AccountServerChannel{{ChannelID: channelID, Tags: []string{"chat", "serverchat"}}},
 			RaidDelay:    "1m",
 			RaidCooldown: "10m",
 		}
@@ -470,7 +470,7 @@ func instructServer(parts []string, channelID, guildID string, account types.Acc
 	return instructResponse{responseType: instructResponseNone}
 }
 
-func instructServerArgs(parts []string, servers []types.AccountServer) (int, []string, error) {
+func instructServerArgs(parts []string, servers []models.AccountServer) (int, []string, error) {
 	resetCmd := localizer.MustLocalize(&i18n.LocalizeConfig{
 		DefaultMessage: &i18n.Message{
 			ID:    "InstructCommandServerReset",

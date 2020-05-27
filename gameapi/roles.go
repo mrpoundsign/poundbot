@@ -7,11 +7,11 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
-	"github.com/poundbot/poundbot/types"
+	"github.com/poundbot/poundbot/pkg/models"
 )
 
 type discordRoleSetter interface {
-	SetRole(types.RoleSet, time.Duration) error
+	SetRole(models.RoleSet, time.Duration) error
 }
 
 type roles struct {
@@ -37,7 +37,7 @@ func (rs roles) roleHandler(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		rhLog.Info("Could not find server")
-		handleError(w, types.RESTError{
+		handleError(w, models.RESTError{
 			Error:      "Error finding server identity",
 			StatusCode: http.StatusInternalServerError,
 		})
@@ -45,12 +45,12 @@ func (rs roles) roleHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	decoder := json.NewDecoder(r.Body)
-	var roleSet types.RoleSet
+	var roleSet models.RoleSet
 
 	err = decoder.Decode(&roleSet)
 	if err != nil {
 		rhLog.WithError(err).Error("Invalid JSON")
-		if err := handleError(w, types.RESTError{
+		if err := handleError(w, models.RESTError{
 			Error:      "Invalid request",
 			StatusCode: http.StatusBadRequest,
 		}); err != nil {
@@ -65,7 +65,7 @@ func (rs roles) roleHandler(w http.ResponseWriter, r *http.Request) {
 
 	if err := rs.drs.SetRole(roleSet, rs.timeout); err != nil {
 		rhLog.Error("timed out sending message to channel")
-		if err := handleError(w, types.RESTError{
+		if err := handleError(w, models.RESTError{
 			Error:      "internal error sending message to discord handler",
 			StatusCode: http.StatusInternalServerError,
 		}); err != nil {

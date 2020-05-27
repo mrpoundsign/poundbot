@@ -1,4 +1,4 @@
-package types
+package models
 
 // GamesInfo steam id translator between server and DB
 // also used as a selector on the DB

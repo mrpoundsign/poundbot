@@ -6,8 +6,8 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
+	"github.com/poundbot/poundbot/pkg/models"
 	"github.com/poundbot/poundbot/storage"
-	"github.com/poundbot/poundbot/types"
 )
 
 type serverClan struct {
@@ -19,8 +19,8 @@ type serverClan struct {
 	Moderators []string
 }
 
-func (s serverClan) ToClan() types.Clan {
-	c := types.Clan{}
+func (s serverClan) ToClan() models.Clan {
+	c := models.Clan{}
 	c.Members = s.Members
 	c.Moderators = s.Moderators
 	if s.Owner != "" {
@@ -60,7 +60,7 @@ func (c *clans) rootHandler(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		rhLog.WithError(err).Info("Can't find server")
-		handleError(w, types.RESTError{
+		handleError(w, models.RESTError{
 			Error:      "Error finding server identity",
 			StatusCode: http.StatusInternalServerError,
 		})
@@ -75,11 +75,11 @@ func (c *clans) rootHandler(w http.ResponseWriter, r *http.Request) {
 	err = decoder.Decode(&sClans)
 	if err != nil {
 		rhLog.WithError(err).Warn("Could not decode clans")
-		handleError(w, types.RESTError{StatusCode: http.StatusBadRequest, Error: "Could not decode clans"})
+		handleError(w, models.RESTError{StatusCode: http.StatusBadRequest, Error: "Could not decode clans"})
 		return
 	}
 
-	var clans = make([]types.Clan, len(sClans))
+	var clans = make([]models.Clan, len(sClans))
 
 	for i := range sClans {
 		clans[i] = sClans[i].ToClan()
@@ -89,7 +89,7 @@ func (c *clans) rootHandler(w http.ResponseWriter, r *http.Request) {
 	err = c.as.SetClans(sc.serverKey, clans)
 	if err != nil {
 		rhLog.WithError(err).Error("Error updating clans")
-		handleError(w, types.RESTError{StatusCode: http.StatusInternalServerError, Error: "Could not set clans"})
+		handleError(w, models.RESTError{StatusCode: http.StatusInternalServerError, Error: "Could not set clans"})
 	}
 }
 
@@ -102,7 +102,7 @@ func (c *clans) clanHandler(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		chLog.WithError(err).Info("Can't find server")
-		handleError(w, types.RESTError{
+		handleError(w, models.RESTError{
 			Error:      "Error finding server identity",
 			StatusCode: http.StatusInternalServerError,
 		})
@@ -117,7 +117,7 @@ func (c *clans) clanHandler(w http.ResponseWriter, r *http.Request) {
 		chLog.Infof("Removing clan \"%s\"", tag)
 		err := c.as.RemoveClan(sc.serverKey, tag)
 		if err != nil {
-			handleError(w, types.RESTError{
+			handleError(w, models.RESTError{
 				Error:      "Could not remove clan",
 				StatusCode: http.StatusInternalServerError,
 			})
@@ -131,7 +131,7 @@ func (c *clans) clanHandler(w http.ResponseWriter, r *http.Request) {
 		err := decoder.Decode(&sClan)
 		if err != nil {
 			chLog.WithError(err).Errorf("Error decoding clan \"%s\"", tag)
-			handleError(w, types.RESTError{
+			handleError(w, models.RESTError{
 				Error:      "Could not decode clan data",
 				StatusCode: http.StatusBadRequest,
 			})
@@ -144,7 +144,7 @@ func (c *clans) clanHandler(w http.ResponseWriter, r *http.Request) {
 
 		err = c.as.AddClan(sc.serverKey, clan)
 		if err != nil {
-			handleError(w, types.RESTError{
+			handleError(w, models.RESTError{
 				Error:      "Could not add clan",
 				StatusCode: http.StatusInternalServerError,
 			})

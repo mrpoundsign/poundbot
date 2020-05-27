@@ -4,23 +4,23 @@ import (
 	"time"
 
 	"github.com/globalsign/mgo"
-	"github.com/poundbot/poundbot/types"
+	"github.com/poundbot/poundbot/pkg/models"
 )
 
 type raidNotifier interface {
-	RaidNotify(types.RaiAlertWithMessageChannel)
+	RaidNotify(models.RaiAlertWithMessageChannel)
 }
 
 // A raidStore stores raid information
 type raidStore interface {
-	GetReady() ([]types.RaidAlert, error)
-	IncrementNotifyCount(types.RaidAlert) error
-	Remove(types.RaidAlert) error
+	GetReady() ([]models.RaidAlert, error)
+	IncrementNotifyCount(models.RaidAlert) error
+	Remove(models.RaidAlert) error
 	messageIDSetter
 }
 
 type messageIDSetter interface {
-	SetMessageID(types.RaidAlert, string) error
+	SetMessageID(models.RaidAlert, string) error
 }
 
 // A RaidAlerter sends notifications on raids
@@ -29,7 +29,7 @@ type RaidAlerter struct {
 	rn        raidNotifier
 	SleepTime time.Duration
 	done      <-chan struct{}
-	miu       func(ra types.RaiAlertWithMessageChannel, is messageIDSetter)
+	miu       func(ra models.RaiAlertWithMessageChannel, is messageIDSetter)
 }
 
 // NewRaidAlerter constructs a RaidAlerter
@@ -43,7 +43,7 @@ func newRaidAlerter(ral raidStore, rn raidNotifier, done <-chan struct{}) *RaidA
 	}
 }
 
-func messageIDUpdate(ra types.RaiAlertWithMessageChannel, is messageIDSetter) {
+func messageIDUpdate(ra models.RaiAlertWithMessageChannel, is messageIDSetter) {
 	raLog := log.WithField("sys", "RALERT")
 	newMessageID, ok := <-ra.MessageIDChannel
 	if !ok {
@@ -95,7 +95,7 @@ func (r *RaidAlerter) Run() {
 				}
 
 				if shouldNotify {
-					message := types.RaiAlertWithMessageChannel{
+					message := models.RaiAlertWithMessageChannel{
 						RaidAlert:        alert,
 						MessageIDChannel: make(chan string),
 					}

@@ -8,15 +8,15 @@ import (
 
 	"github.com/globalsign/mgo/bson"
 	"github.com/poundbot/poundbot/pbclock"
+	"github.com/poundbot/poundbot/pkg/models"
 	"github.com/poundbot/poundbot/storage/mongodb/mongotest"
-	"github.com/poundbot/poundbot/types"
 	"github.com/stretchr/testify/assert"
 )
 
-var baseAccount = types.Account{
-	BaseAccount: types.BaseAccount{GuildSnowflake: "snowflake"},
-	Timestamp:   types.Timestamp{CreatedAt: time.Date(2014, 1, 31, 14, 50, 20, 720408938, time.UTC).Truncate(time.Millisecond)},
-	Servers:     []types.AccountServer{{Key: "key"}},
+var baseAccount = models.Account{
+	BaseAccount: models.BaseAccount{GuildSnowflake: "snowflake"},
+	Timestamp:   models.Timestamp{CreatedAt: time.Date(2014, 1, 31, 14, 50, 20, 720408938, time.UTC).Truncate(time.Millisecond)},
+	Servers:     []models.AccountServer{{Key: "key"}},
 }
 
 func NewAccounts(t *testing.T) (*Accounts, *mongotest.Collection) {
@@ -32,7 +32,7 @@ func TestAccounts_All(t *testing.T) {
 
 	tests := []struct {
 		name    string
-		want    []types.Account
+		want    []models.Account
 		wantErr bool
 	}{
 		{
@@ -41,21 +41,21 @@ func TestAccounts_All(t *testing.T) {
 		},
 		{
 			name: "some",
-			want: []types.Account{
+			want: []models.Account{
 				{
 					ID:        bson.NewObjectId(),
-					Timestamp: types.Timestamp{CreatedAt: time.Now().UTC().Truncate(time.Millisecond)},
-					Servers:   []types.AccountServer{{Key: "key", Clans: []types.Clan{}}},
+					Timestamp: models.Timestamp{CreatedAt: time.Now().UTC().Truncate(time.Millisecond)},
+					Servers:   []models.AccountServer{{Key: "key", Clans: []models.Clan{}}},
 				},
 				{
 					ID:        bson.NewObjectId(),
-					Timestamp: types.Timestamp{CreatedAt: time.Now().UTC().Add(-1 * time.Hour).Truncate(time.Millisecond)},
-					Servers:   []types.AccountServer{{Key: "key2", Clans: []types.Clan{}}},
+					Timestamp: models.Timestamp{CreatedAt: time.Now().UTC().Add(-1 * time.Hour).Truncate(time.Millisecond)},
+					Servers:   []models.AccountServer{{Key: "key2", Clans: []models.Clan{}}},
 				},
 				{
 					ID:        bson.NewObjectId(),
-					Timestamp: types.Timestamp{CreatedAt: time.Now().UTC().Add(-2 * time.Hour).Truncate(time.Millisecond)},
-					Servers:   []types.AccountServer{{Key: "key3", Clans: []types.Clan{}}},
+					Timestamp: models.Timestamp{CreatedAt: time.Now().UTC().Add(-2 * time.Hour).Truncate(time.Millisecond)},
+					Servers:   []models.AccountServer{{Key: "key3", Clans: []models.Clan{}}},
 				},
 			},
 		},
@@ -69,7 +69,7 @@ func TestAccounts_All(t *testing.T) {
 				coll.C.Insert(account)
 			}
 
-			var res []types.Account
+			var res []models.Account
 
 			if err := accounts.All(&res); (err != nil) != tt.wantErr {
 				t.Errorf("Accounts.GetByDiscordGuild() error = %v, wantErr %v", err, tt.wantErr)
@@ -87,16 +87,16 @@ func TestAccounts_GetByDiscordGuild(t *testing.T) {
 	tests := []struct {
 		name    string
 		key     string
-		want    types.Account
+		want    models.Account
 		wantErr bool
 	}{
 		{
 			name: "exists",
-			want: types.Account{
+			want: models.Account{
 				ID:          id,
-				Timestamp:   types.Timestamp{CreatedAt: time.Date(2014, 1, 31, 14, 50, 20, 720408938, time.UTC).Truncate(time.Millisecond)},
-				BaseAccount: types.BaseAccount{GuildSnowflake: "found"},
-				Servers:     []types.AccountServer{{Key: "key2", Clans: []types.Clan{}}},
+				Timestamp:   models.Timestamp{CreatedAt: time.Date(2014, 1, 31, 14, 50, 20, 720408938, time.UTC).Truncate(time.Millisecond)},
+				BaseAccount: models.BaseAccount{GuildSnowflake: "found"},
+				Servers:     []models.AccountServer{{Key: "key2", Clans: []models.Clan{}}},
 			},
 			key: "found",
 		},
@@ -106,22 +106,22 @@ func TestAccounts_GetByDiscordGuild(t *testing.T) {
 			accounts, coll := NewAccounts(t)
 			defer coll.Close()
 
-			make := []types.Account{
+			make := []models.Account{
 				{
-					Timestamp:   types.Timestamp{CreatedAt: time.Now().UTC().Truncate(time.Millisecond)},
-					BaseAccount: types.BaseAccount{GuildSnowflake: "lost"},
-					Servers:     []types.AccountServer{{Key: "key", Clans: []types.Clan{}}},
+					Timestamp:   models.Timestamp{CreatedAt: time.Now().UTC().Truncate(time.Millisecond)},
+					BaseAccount: models.BaseAccount{GuildSnowflake: "lost"},
+					Servers:     []models.AccountServer{{Key: "key", Clans: []models.Clan{}}},
 				},
 				{
 					ID:          id,
-					Timestamp:   types.Timestamp{CreatedAt: time.Date(2014, 1, 31, 14, 50, 20, 720408938, time.UTC).Truncate(time.Millisecond)},
-					BaseAccount: types.BaseAccount{GuildSnowflake: "found"},
-					Servers:     []types.AccountServer{{Key: "key2", Clans: []types.Clan{}}},
+					Timestamp:   models.Timestamp{CreatedAt: time.Date(2014, 1, 31, 14, 50, 20, 720408938, time.UTC).Truncate(time.Millisecond)},
+					BaseAccount: models.BaseAccount{GuildSnowflake: "found"},
+					Servers:     []models.AccountServer{{Key: "key2", Clans: []models.Clan{}}},
 				},
 				{
-					Timestamp:   types.Timestamp{CreatedAt: time.Now().UTC().Add(-2 * time.Hour).Truncate(time.Millisecond)},
-					BaseAccount: types.BaseAccount{GuildSnowflake: "lost2"},
-					Servers:     []types.AccountServer{{Key: "key3", Clans: []types.Clan{}}},
+					Timestamp:   models.Timestamp{CreatedAt: time.Now().UTC().Add(-2 * time.Hour).Truncate(time.Millisecond)},
+					BaseAccount: models.BaseAccount{GuildSnowflake: "lost2"},
+					Servers:     []models.AccountServer{{Key: "key3", Clans: []models.Clan{}}},
 				},
 			}
 
@@ -149,16 +149,16 @@ func TestAccounts_GetByServerKey(t *testing.T) {
 	tests := []struct {
 		name    string
 		args    args
-		want    types.Account
+		want    models.Account
 		wantErr bool
 	}{
 		{
 			name: "result",
 			args: args{key: "key2"},
-			want: types.Account{
+			want: models.Account{
 				ID:        id,
-				Timestamp: types.Timestamp{CreatedAt: time.Date(2014, 1, 31, 14, 50, 20, 720408938, time.UTC).Truncate(time.Millisecond)},
-				Servers:   []types.AccountServer{{Key: "key2", Clans: []types.Clan{}}},
+				Timestamp: models.Timestamp{CreatedAt: time.Date(2014, 1, 31, 14, 50, 20, 720408938, time.UTC).Truncate(time.Millisecond)},
+				Servers:   []models.AccountServer{{Key: "key2", Clans: []models.Clan{}}},
 			},
 		},
 	}
@@ -167,19 +167,19 @@ func TestAccounts_GetByServerKey(t *testing.T) {
 			accounts, coll := NewAccounts(t)
 			defer coll.Close()
 
-			docs := []types.Account{
+			docs := []models.Account{
 				{
-					Timestamp: types.Timestamp{CreatedAt: time.Now().UTC().Truncate(time.Millisecond)},
-					Servers:   []types.AccountServer{{Key: "key", Clans: []types.Clan{}}},
+					Timestamp: models.Timestamp{CreatedAt: time.Now().UTC().Truncate(time.Millisecond)},
+					Servers:   []models.AccountServer{{Key: "key", Clans: []models.Clan{}}},
 				},
 				{
 					ID:        id,
-					Timestamp: types.Timestamp{CreatedAt: time.Date(2014, 1, 31, 14, 50, 20, 720408938, time.UTC).Truncate(time.Millisecond)},
-					Servers:   []types.AccountServer{{Key: "key2", Clans: []types.Clan{}}},
+					Timestamp: models.Timestamp{CreatedAt: time.Date(2014, 1, 31, 14, 50, 20, 720408938, time.UTC).Truncate(time.Millisecond)},
+					Servers:   []models.AccountServer{{Key: "key2", Clans: []models.Clan{}}},
 				},
 				{
-					Timestamp: types.Timestamp{CreatedAt: time.Now().UTC().Add(-2 * time.Hour).Truncate(time.Millisecond)},
-					Servers:   []types.AccountServer{{Key: "key3", Clans: []types.Clan{}}},
+					Timestamp: models.Timestamp{CreatedAt: time.Now().UTC().Add(-2 * time.Hour).Truncate(time.Millisecond)},
+					Servers:   []models.AccountServer{{Key: "key3", Clans: []models.Clan{}}},
 				},
 			}
 
@@ -199,25 +199,25 @@ func TestAccounts_GetByServerKey(t *testing.T) {
 func TestAccounts_UpsertBase(t *testing.T) {
 	t.Parallel()
 
-	var baseAccount = types.Account{
-		Timestamp:   types.Timestamp{CreatedAt: time.Date(2014, 1, 31, 14, 50, 20, 720408938, time.UTC).Truncate(time.Millisecond)},
-		BaseAccount: types.BaseAccount{GuildSnowflake: "yarp1"},
+	var baseAccount = models.Account{
+		Timestamp:   models.Timestamp{CreatedAt: time.Date(2014, 1, 31, 14, 50, 20, 720408938, time.UTC).Truncate(time.Millisecond)},
+		BaseAccount: models.BaseAccount{GuildSnowflake: "yarp1"},
 	}
 
 	tests := []struct {
 		name      string
-		account   types.Account
+		account   models.Account
 		wantCount int
 		wantErr   bool
 	}{
 		{
 			name:      "insert",
-			account:   types.Account{BaseAccount: types.BaseAccount{GuildSnowflake: "yuss"}},
+			account:   models.Account{BaseAccount: models.BaseAccount{GuildSnowflake: "yuss"}},
 			wantCount: 2,
 		},
 		{
 			name:      "upsert",
-			account:   types.Account{BaseAccount: types.BaseAccount{GuildSnowflake: "yarp1"}},
+			account:   models.Account{BaseAccount: models.BaseAccount{GuildSnowflake: "yarp1"}},
 			wantCount: 1,
 		},
 	}
@@ -274,18 +274,18 @@ func TestAccounts_Remove(t *testing.T) {
 			accounts, coll := NewAccounts(t)
 			defer coll.Close()
 
-			make := []types.Account{
+			make := []models.Account{
 				{
-					Timestamp:   types.Timestamp{CreatedAt: iclock().Now().UTC().Truncate(time.Millisecond)},
-					BaseAccount: types.BaseAccount{GuildSnowflake: "snowflake1"},
+					Timestamp:   models.Timestamp{CreatedAt: iclock().Now().UTC().Truncate(time.Millisecond)},
+					BaseAccount: models.BaseAccount{GuildSnowflake: "snowflake1"},
 				},
 				{
-					Timestamp:   types.Timestamp{CreatedAt: time.Date(2014, 1, 31, 14, 50, 20, 720408938, time.UTC).Truncate(time.Millisecond)},
-					BaseAccount: types.BaseAccount{GuildSnowflake: "snowflake2"},
+					Timestamp:   models.Timestamp{CreatedAt: time.Date(2014, 1, 31, 14, 50, 20, 720408938, time.UTC).Truncate(time.Millisecond)},
+					BaseAccount: models.BaseAccount{GuildSnowflake: "snowflake2"},
 				},
 				{
-					Timestamp:   types.Timestamp{CreatedAt: iclock().Now().UTC().Add(-2 * time.Hour).Truncate(time.Millisecond)},
-					BaseAccount: types.BaseAccount{GuildSnowflake: "snowflake3"},
+					Timestamp:   models.Timestamp{CreatedAt: iclock().Now().UTC().Add(-2 * time.Hour).Truncate(time.Millisecond)},
+					BaseAccount: models.BaseAccount{GuildSnowflake: "snowflake3"},
 				},
 			}
 
@@ -323,17 +323,17 @@ func TestAccounts_RemoveNotInDiscordGuildList(t *testing.T) {
 	accounts, coll := NewAccounts(t)
 	defer coll.Close()
 
-	docs := []types.Account{
+	docs := []models.Account{
 		{
 			ID:          bson.NewObjectId(),
-			Timestamp:   types.Timestamp{CreatedAt: iclock().Now().UTC().Truncate(time.Millisecond)},
-			BaseAccount: types.BaseAccount{GuildSnowflake: "snowflake1"},
+			Timestamp:   models.Timestamp{CreatedAt: iclock().Now().UTC().Truncate(time.Millisecond)},
+			BaseAccount: models.BaseAccount{GuildSnowflake: "snowflake1"},
 			Disabled:    true,
 		},
 		{
 			ID:          bson.NewObjectId(),
-			Timestamp:   types.Timestamp{CreatedAt: time.Date(2014, 1, 31, 14, 50, 20, 720408938, time.UTC).Truncate(time.Millisecond)},
-			BaseAccount: types.BaseAccount{GuildSnowflake: "snowflake2"},
+			Timestamp:   models.Timestamp{CreatedAt: time.Date(2014, 1, 31, 14, 50, 20, 720408938, time.UTC).Truncate(time.Millisecond)},
+			BaseAccount: models.BaseAccount{GuildSnowflake: "snowflake2"},
 			Disabled:    false,
 		},
 	}
@@ -345,33 +345,33 @@ func TestAccounts_RemoveNotInDiscordGuildList(t *testing.T) {
 		}
 	}
 
-	wantDocs := []types.Account{
+	wantDocs := []models.Account{
 		{
 			ID:          docs[0].ID,
-			Timestamp:   types.Timestamp{CreatedAt: iclock().Now().UTC().Truncate(time.Millisecond)},
-			BaseAccount: types.BaseAccount{GuildSnowflake: "snowflake1"},
+			Timestamp:   models.Timestamp{CreatedAt: iclock().Now().UTC().Truncate(time.Millisecond)},
+			BaseAccount: models.BaseAccount{GuildSnowflake: "snowflake1"},
 			Disabled:    true,
 		},
 		{
 			ID: docs[1].ID,
-			Timestamp: types.Timestamp{
+			Timestamp: models.Timestamp{
 				CreatedAt: time.Date(2014, 1, 31, 14, 50, 20, 720408938, time.UTC).Truncate(time.Millisecond),
 				UpdatedAt: iclock().Now().UTC().Truncate(time.Millisecond),
 			},
-			BaseAccount: types.BaseAccount{GuildSnowflake: "snowflake2"},
+			BaseAccount: models.BaseAccount{GuildSnowflake: "snowflake2"},
 			Disabled:    false,
 		},
 		{
-			Timestamp: types.Timestamp{
+			Timestamp: models.Timestamp{
 				CreatedAt: iclock().Now().UTC().Truncate(time.Millisecond),
 				UpdatedAt: iclock().Now().UTC().Truncate(time.Millisecond),
 			},
-			BaseAccount: types.BaseAccount{GuildSnowflake: "snowflake3"},
+			BaseAccount: models.BaseAccount{GuildSnowflake: "snowflake3"},
 			Disabled:    false,
 		},
 	}
 
-	args := []types.BaseAccount{
+	args := []models.BaseAccount{
 		wantDocs[1].BaseAccount,
 		wantDocs[2].BaseAccount,
 	}
@@ -405,24 +405,24 @@ func TestAccounts_AddClan(t *testing.T) {
 
 	type args struct {
 		key  string
-		clan types.Clan
+		clan models.Clan
 	}
 	tests := []struct {
 		name    string
 		args    args
-		want    types.Account
+		want    models.Account
 		wantErr bool
 	}{
 		{
 			name: "result",
-			want: types.Account{
-				Timestamp: types.Timestamp{CreatedAt: time.Date(2014, 1, 31, 14, 50, 20, 720408938, time.UTC).Truncate(time.Millisecond)},
-				Servers: []types.AccountServer{{Key: "key2", Clans: []types.Clan{
+			want: models.Account{
+				Timestamp: models.Timestamp{CreatedAt: time.Date(2014, 1, 31, 14, 50, 20, 720408938, time.UTC).Truncate(time.Millisecond)},
+				Servers: []models.AccountServer{{Key: "key2", Clans: []models.Clan{
 					{Tag: "bloops"},
 					{Tag: "bloops2"},
 				}}},
 			},
-			args: args{key: "key2", clan: types.Clan{Tag: "bloops2"}},
+			args: args{key: "key2", clan: models.Clan{Tag: "bloops2"}},
 		},
 	}
 	for _, tt := range tests {
@@ -433,17 +433,17 @@ func TestAccounts_AddClan(t *testing.T) {
 			id := bson.NewObjectId()
 			tt.want.ID = id
 
-			coll.C.Insert(types.Account{
+			coll.C.Insert(models.Account{
 				ID:        id,
-				Timestamp: types.Timestamp{CreatedAt: time.Date(2014, 1, 31, 14, 50, 20, 720408938, time.UTC).Truncate(time.Millisecond)},
-				Servers:   []types.AccountServer{{Key: "key2", Clans: []types.Clan{{Tag: "bloops"}}}},
+				Timestamp: models.Timestamp{CreatedAt: time.Date(2014, 1, 31, 14, 50, 20, 720408938, time.UTC).Truncate(time.Millisecond)},
+				Servers:   []models.AccountServer{{Key: "key2", Clans: []models.Clan{{Tag: "bloops"}}}},
 			})
 
 			if err := accounts.AddClan(tt.args.key, tt.args.clan); (err != nil) != tt.wantErr {
 				t.Errorf("Accounts.AddClan() error = %v, wantErr %v", err, tt.wantErr)
 			}
 
-			var account types.Account
+			var account models.Account
 			coll.C.Find(bson.M{}).One(&account)
 			assert.Equal(t, tt.want, account)
 		})
@@ -461,16 +461,16 @@ func TestAccounts_RemoveClan(t *testing.T) {
 	}
 	tests := []struct {
 		name    string
-		want    types.Account
+		want    models.Account
 		args    args
 		wantErr bool
 	}{
 		{
 			name: "result",
-			want: types.Account{
+			want: models.Account{
 				ID:        id,
-				Timestamp: types.Timestamp{CreatedAt: time.Date(2014, 1, 31, 14, 50, 20, 720408938, time.UTC).Truncate(time.Millisecond)},
-				Servers:   []types.AccountServer{{Key: "key2", Clans: []types.Clan{{Tag: "bloops2"}}}},
+				Timestamp: models.Timestamp{CreatedAt: time.Date(2014, 1, 31, 14, 50, 20, 720408938, time.UTC).Truncate(time.Millisecond)},
+				Servers:   []models.AccountServer{{Key: "key2", Clans: []models.Clan{{Tag: "bloops2"}}}},
 			},
 			args: args{key: "key2", clanTag: "bloops"},
 		},
@@ -480,17 +480,17 @@ func TestAccounts_RemoveClan(t *testing.T) {
 			accounts, coll := NewAccounts(t)
 			defer coll.Close()
 
-			coll.C.Insert(types.Account{
+			coll.C.Insert(models.Account{
 				ID:        id,
-				Timestamp: types.Timestamp{CreatedAt: time.Date(2014, 1, 31, 14, 50, 20, 720408938, time.UTC).Truncate(time.Millisecond)},
-				Servers:   []types.AccountServer{{Key: "key2", Clans: []types.Clan{{Tag: "bloops"}, {Tag: "bloops2"}}}},
+				Timestamp: models.Timestamp{CreatedAt: time.Date(2014, 1, 31, 14, 50, 20, 720408938, time.UTC).Truncate(time.Millisecond)},
+				Servers:   []models.AccountServer{{Key: "key2", Clans: []models.Clan{{Tag: "bloops"}, {Tag: "bloops2"}}}},
 			})
 
 			if err := accounts.RemoveClan(tt.args.key, tt.args.clanTag); (err != nil) != tt.wantErr {
 				t.Errorf("Accounts.RemoveClan() error = %v, wantErr %v", err, tt.wantErr)
 			}
 
-			var account types.Account
+			var account models.Account
 			coll.C.Find(bson.M{}).One(&account)
 			assert.Equal(t, tt.want, account)
 		})
@@ -504,35 +504,35 @@ func TestAccounts_SetClans(t *testing.T) {
 
 	type args struct {
 		key   string
-		clans []types.Clan
+		clans []models.Clan
 	}
 	tests := []struct {
 		name    string
 		args    args
-		want    types.Account
+		want    models.Account
 		wantErr bool
 	}{
 		{
 			name: "modified",
-			want: types.Account{
+			want: models.Account{
 				ID:        id,
-				Timestamp: types.Timestamp{CreatedAt: time.Date(2014, 1, 31, 14, 50, 20, 720408938, time.UTC).Truncate(time.Millisecond)},
-				Servers:   []types.AccountServer{{Key: "key2", Clans: []types.Clan{{Tag: "foo"}}}},
+				Timestamp: models.Timestamp{CreatedAt: time.Date(2014, 1, 31, 14, 50, 20, 720408938, time.UTC).Truncate(time.Millisecond)},
+				Servers:   []models.AccountServer{{Key: "key2", Clans: []models.Clan{{Tag: "foo"}}}},
 			},
-			args: args{key: "key2", clans: []types.Clan{{Tag: "foo"}}},
+			args: args{key: "key2", clans: []models.Clan{{Tag: "foo"}}},
 		},
 		{
 			name: "existing",
-			want: types.Account{
+			want: models.Account{
 				ID:        id,
-				Timestamp: types.Timestamp{CreatedAt: time.Date(2014, 1, 31, 14, 50, 20, 720408938, time.UTC).Truncate(time.Millisecond)},
-				Servers:   []types.AccountServer{{Key: "key2", Clans: []types.Clan{{Tag: "existing"}}}},
+				Timestamp: models.Timestamp{CreatedAt: time.Date(2014, 1, 31, 14, 50, 20, 720408938, time.UTC).Truncate(time.Millisecond)},
+				Servers:   []models.AccountServer{{Key: "key2", Clans: []models.Clan{{Tag: "existing"}}}},
 			},
-			args: args{key: "key2", clans: []types.Clan{{Tag: "existing"}}},
+			args: args{key: "key2", clans: []models.Clan{{Tag: "existing"}}},
 		},
 		{
 			name:    "not found",
-			args:    args{key: "key", clans: []types.Clan{}},
+			args:    args{key: "key", clans: []models.Clan{}},
 			wantErr: true,
 		},
 	}
@@ -541,12 +541,12 @@ func TestAccounts_SetClans(t *testing.T) {
 			accounts, coll := NewAccounts(t)
 			defer coll.Close()
 
-			coll.C.Insert(types.Account{
+			coll.C.Insert(models.Account{
 				ID:        id,
-				Timestamp: types.Timestamp{CreatedAt: time.Date(2014, 1, 31, 14, 50, 20, 720408938, time.UTC).Truncate(time.Millisecond)},
-				Servers: []types.AccountServer{{
+				Timestamp: models.Timestamp{CreatedAt: time.Date(2014, 1, 31, 14, 50, 20, 720408938, time.UTC).Truncate(time.Millisecond)},
+				Servers: []models.AccountServer{{
 					Key:   "key2",
-					Clans: []types.Clan{{Tag: "existing"}},
+					Clans: []models.Clan{{Tag: "existing"}},
 				}},
 			})
 
@@ -554,7 +554,7 @@ func TestAccounts_SetClans(t *testing.T) {
 				t.Errorf("Accounts.SetClans() error = %v, wantErr %v", err, tt.wantErr)
 			}
 
-			var account types.Account
+			var account models.Account
 			coll.C.Find(bson.M{serverKeyField: tt.args.key}).One(&account)
 			assert.Equal(t, tt.want, account)
 		})
@@ -564,17 +564,17 @@ func TestAccounts_SetClans(t *testing.T) {
 func TestAccounts_AddServer(t *testing.T) {
 	type args struct {
 		snowflake string
-		server    types.AccountServer
+		server    models.AccountServer
 	}
 	tests := []struct {
 		name    string
 		args    args
-		want    types.Account
+		want    models.Account
 		wantErr bool
 	}{
 		{
 			name: "add",
-			args: args{server: types.AccountServer{Key: "key"}, snowflake: "snowflake"},
+			args: args{server: models.AccountServer{Key: "key"}, snowflake: "snowflake"},
 		},
 	}
 	for _, tt := range tests {
@@ -587,7 +587,7 @@ func TestAccounts_AddServer(t *testing.T) {
 			if err := accounts.AddServer(tt.args.snowflake, tt.args.server); (err != nil) != tt.wantErr {
 				t.Errorf("Accounts.AddServer() error = %v, wantErr %v", err, tt.wantErr)
 			}
-			var account types.Account
+			var account models.Account
 			coll.C.Find(bson.M{serverKeyField: tt.args.snowflake}).One(&account)
 			assert.Equal(t, tt.want, account)
 		})
@@ -620,7 +620,7 @@ func TestAccounts_UpdateServer(t *testing.T) {
 	type args struct {
 		snowflake string
 		oldKey    string
-		server    types.AccountServer
+		server    models.AccountServer
 	}
 	tests := []struct {
 		name    string

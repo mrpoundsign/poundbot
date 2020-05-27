@@ -10,10 +10,9 @@ import (
 	"context"
 
 	"github.com/globalsign/mgo/bson"
+	"github.com/poundbot/poundbot/pkg/models"
 	"github.com/poundbot/poundbot/storage/mocks"
-	"github.com/poundbot/poundbot/types"
 
-	// "github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -27,7 +26,7 @@ func TestEntityDeath_Handle(t *testing.T) {
 		method string
 		status int
 		rBody  string
-		ed     *types.EntityDeath
+		ed     *models.EntityDeath
 		log    string
 	}{
 		{
@@ -50,12 +49,12 @@ func TestEntityDeath_Handle(t *testing.T) {
 				"CreatedAt": "2001-02-03T04:05:06Z"
 			}
 			`,
-			ed: &types.EntityDeath{
+			ed: &models.EntityDeath{
 				ServerName: "server1",
 				Name:       "foo",
 				GridPos:    "A10",
 				OwnerIDs:   []string{"game:1", "game:2", "game:3"},
-				Timestamp:  types.Timestamp{CreatedAt: time.Date(2001, 2, 3, 4, 5, 6, 0, time.UTC)},
+				Timestamp:  models.Timestamp{CreatedAt: time.Date(2001, 2, 3, 4, 5, 6, 0, time.UTC)},
 			},
 			log: "auth success",
 		},
@@ -79,12 +78,12 @@ func TestEntityDeath_Handle(t *testing.T) {
 				"CreatedAt": "2001-02-03T04:05:06Z"
 			}
 			`,
-			ed: &types.EntityDeath{
+			ed: &models.EntityDeath{
 				ServerName: "server1",
 				Name:       "foo",
 				GridPos:    "A10",
 				OwnerIDs:   []string{"game:1", "game:2", "game:3"},
-				Timestamp:  types.Timestamp{CreatedAt: time.Date(2001, 2, 3, 4, 5, 6, 0, time.UTC)},
+				Timestamp:  models.Timestamp{CreatedAt: time.Date(2001, 2, 3, 4, 5, 6, 0, time.UTC)},
 			},
 		},
 	}
@@ -98,12 +97,12 @@ func TestEntityDeath_Handle(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			var added *types.EntityDeath
+			var added *models.EntityDeath
 			ras := mocks.RaidAlertsStore{}
 			tt.e.raa = &ras
 
-			ras.On("AddInfo", mock.AnythingOfType("time.Duration"), mock.AnythingOfType("time.Duration"), mock.AnythingOfType("types.EntityDeath")).
-				Return(func(t, v time.Duration, ed types.EntityDeath) error {
+			ras.On("AddInfo", mock.AnythingOfType("time.Duration"), mock.AnythingOfType("time.Duration"), mock.AnythingOfType("models.EntityDeath")).
+				Return(func(t, v time.Duration, ed models.EntityDeath) error {
 					added = &ed
 					return nil
 				})
@@ -113,9 +112,9 @@ func TestEntityDeath_Handle(t *testing.T) {
 			ctx := context.WithValue(context.Background(), contextKeyServerKey, "bloop")
 			ctx = context.WithValue(ctx, contextKeyRequestUUID, "request-1")
 			ctx = context.WithValue(ctx, contextKeyGame, "game")
-			ctx = context.WithValue(ctx, contextKeyAccount, types.Account{
+			ctx = context.WithValue(ctx, contextKeyAccount, models.Account{
 				ID: bson.ObjectIdHex("5cafadc080e1a9498fea8f03"),
-				Servers: []types.AccountServer{
+				Servers: []models.AccountServer{
 					{Key: "bloop", Name: "server1"},
 				},
 			})

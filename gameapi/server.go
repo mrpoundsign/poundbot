@@ -8,19 +8,19 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
+	"github.com/poundbot/poundbot/pkg/models"
 	"github.com/poundbot/poundbot/storage"
-	"github.com/poundbot/poundbot/types"
 )
 
 const upgradeURL = "https://umod.org/plugins/pound-bot"
 
 type discordHandler interface {
-	RaidNotify(types.RaiAlertWithMessageChannel)
-	AuthDiscord(types.DiscordAuth)
-	SendChatMessage(types.ChatMessage)
-	SendGameMessage(types.GameMessage, time.Duration) error
-	ServerChannels(types.ServerChannelsRequest)
-	SetRole(types.RoleSet, time.Duration) error
+	RaidNotify(models.RaiAlertWithMessageChannel)
+	AuthDiscord(models.DiscordAuth)
+	SendChatMessage(models.ChatMessage)
+	SendGameMessage(models.GameMessage, time.Duration) error
+	ServerChannels(models.ServerChannelsRequest)
+	SetRole(models.RoleSet, time.Duration) error
 }
 
 // ServerConfig contains the base Server configuration
@@ -31,7 +31,7 @@ type ServerConfig struct {
 }
 
 type ServerChannels struct {
-	AuthSuccess <-chan types.DiscordAuth
+	AuthSuccess <-chan models.DiscordAuth
 	ChatQueue   storage.ChatQueueStore
 }
 

@@ -5,14 +5,14 @@ package mongodb
 import (
 	"testing"
 
+	"github.com/poundbot/poundbot/pkg/models"
 	"github.com/poundbot/poundbot/storage/mongodb/mongotest"
-	"github.com/poundbot/poundbot/types"
 	"github.com/stretchr/testify/assert"
 )
 
-var baseUser = types.BaseUser{
-	GamesInfo: types.GamesInfo{PlayerIDs: []string{"pid1"}},
-	DiscordInfo: types.DiscordInfo{
+var baseUser = models.BaseUser{
+	GamesInfo: models.GamesInfo{PlayerIDs: []string{"pid1"}},
+	DiscordInfo: models.DiscordInfo{
 		Snowflake: "did1",
 	},
 }
@@ -34,18 +34,18 @@ func TestUsers_GetByPlayerID(t *testing.T) {
 	tests := []struct {
 		name    string
 		args    args
-		want    *types.User
+		want    *models.User
 		wantErr bool
 	}{
 		{
 			name: "found",
 			args: args{gameUserID: "pid1"},
-			want: &types.User{BaseUser: baseUser},
+			want: &models.User{BaseUser: baseUser},
 		},
 		{
 			name:    "not found",
 			args:    args{gameUserID: "notfound"},
-			want:    &types.User{},
+			want:    &models.User{},
 			wantErr: true,
 		},
 	}

@@ -6,7 +6,7 @@ import (
 	"context"
 
 	"github.com/gofrs/uuid"
-	"github.com/poundbot/poundbot/types"
+	"github.com/poundbot/poundbot/pkg/models"
 )
 
 func requestUUID(next http.Handler) http.Handler {
@@ -16,7 +16,7 @@ func requestUUID(next http.Handler) http.Handler {
 			if len(requestUUID) == 0 {
 				rUUID, err := uuid.NewV4()
 				if err != nil {
-					handleError(w, types.RESTError{
+					handleError(w, models.RESTError{
 						StatusCode: http.StatusInternalServerError,
 						Error:      "could not create UUID",
 					})

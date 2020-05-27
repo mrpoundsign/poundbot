@@ -8,13 +8,13 @@ import (
 	"github.com/bwmarrin/discordgo"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 	"github.com/poundbot/poundbot/messages"
-	"github.com/poundbot/poundbot/types"
+	"github.com/poundbot/poundbot/pkg/models"
 
 	"github.com/sirupsen/logrus"
 )
 
 type dmUserStorage interface {
-	GetByDiscordID(snowflake string) (types.User, error)
+	GetByDiscordID(snowflake string) (models.User, error)
 	RemovePlayerID(snowflake, playerID string) error
 }
 
@@ -23,14 +23,14 @@ type dmAuthStorage interface {
 }
 
 type dmDiscordAccountStorage interface {
-	GetByDiscordID(snowflake string) (types.DiscordAuth, error)
+	GetByDiscordID(snowflake string) (models.DiscordAuth, error)
 }
 
 type dm struct {
 	us       dmUserStorage
 	as       dmAuthStorage
 	das      dmDiscordAccountStorage
-	authChan chan<- types.DiscordAuth
+	authChan chan<- models.DiscordAuth
 }
 
 func (i dm) process(m discordgo.MessageCreate) string {

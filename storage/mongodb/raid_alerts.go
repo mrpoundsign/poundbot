@@ -7,8 +7,8 @@ import (
 
 	"github.com/globalsign/mgo"
 	"github.com/globalsign/mgo/bson"
+	"github.com/poundbot/poundbot/pkg/models"
 	"github.com/poundbot/poundbot/storage"
-	"github.com/poundbot/poundbot/types"
 )
 
 // A RaidAlerts implements storage.RaidAlertsStore
@@ -18,7 +18,7 @@ type RaidAlerts struct {
 }
 
 // AddInfo implements storage.RaidAlertsStore.AddInfo
-func (r RaidAlerts) AddInfo(alertIn, invalidIn time.Duration, ed types.EntityDeath) error {
+func (r RaidAlerts) AddInfo(alertIn, invalidIn time.Duration, ed models.EntityDeath) error {
 	for _, pid := range ed.OwnerIDs {
 		// Checking if the user exists, just bail if not
 		_, err := r.users.GetByPlayerID(pid)
@@ -61,8 +61,8 @@ func (r RaidAlerts) AddInfo(alertIn, invalidIn time.Duration, ed types.EntityDea
 }
 
 // GetReady implements storage.RaidAlertsStore.GetReady
-func (r RaidAlerts) GetReady() ([]types.RaidAlert, error) {
-	var alerts []types.RaidAlert
+func (r RaidAlerts) GetReady() ([]models.RaidAlert, error) {
+	var alerts []models.RaidAlert
 
 	err := r.collection.Find(
 		bson.M{
@@ -75,11 +75,11 @@ func (r RaidAlerts) GetReady() ([]types.RaidAlert, error) {
 }
 
 // Remove implements storage.RaidAlertsStore.Remove
-func (r RaidAlerts) Remove(alert types.RaidAlert) error {
+func (r RaidAlerts) Remove(alert models.RaidAlert) error {
 	return r.collection.Remove(bson.M{"_id": alert.ID})
 }
 
-func (r RaidAlerts) IncrementNotifyCount(ra types.RaidAlert) error {
+func (r RaidAlerts) IncrementNotifyCount(ra models.RaidAlert) error {
 	icount := ra.ItemCount()
 
 	if icount == ra.NotifyCount {
@@ -99,7 +99,7 @@ func (r RaidAlerts) IncrementNotifyCount(ra types.RaidAlert) error {
 	)
 }
 
-func (r RaidAlerts) SetMessageID(ra types.RaidAlert, messageID string) error {
+func (r RaidAlerts) SetMessageID(ra models.RaidAlert, messageID string) error {
 	return r.collection.Update(
 		bson.M{"_id": ra.ID},
 		bson.M{

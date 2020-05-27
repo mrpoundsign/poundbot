@@ -7,12 +7,12 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
-	"github.com/poundbot/poundbot/types"
+	"github.com/poundbot/poundbot/pkg/models"
 )
 
 type discordMessageSender interface {
-	SendGameMessage(types.GameMessage, time.Duration) error
-	ServerChannels(types.ServerChannelsRequest)
+	SendGameMessage(models.GameMessage, time.Duration) error
+	ServerChannels(models.ServerChannelsRequest)
 }
 
 // A Chat is for handling discord <-> rust chat
@@ -43,21 +43,21 @@ func (mh *messages) rootHandler(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		rhLog.WithError(err).Info("Can't find server")
-		handleError(w, types.RESTError{
+		handleError(w, models.RESTError{
 			Error:      "Error finding server identity",
 			StatusCode: http.StatusInternalServerError,
 		})
 		return
 	}
 
-	rChan := make(chan types.ServerChannelsResponse)
+	rChan := make(chan models.ServerChannelsResponse)
 
-	mh.dms.ServerChannels(types.ServerChannelsRequest{GuildID: sc.account.GuildSnowflake, ResponseChan: rChan})
+	mh.dms.ServerChannels(models.ServerChannelsRequest{GuildID: sc.account.GuildSnowflake, ResponseChan: rChan})
 
 	response := <-rChan
 	if !response.OK {
 		rhLog.Error("rootHandler: Could not get channels")
-		handleError(w, types.RESTError{
+		handleError(w, models.RESTError{
 			Error:      "Could not get channels",
 			StatusCode: http.StatusInternalServerError,
 		})
@@ -86,7 +86,7 @@ func (mh *messages) channelHandler(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		mhLog.WithError(err).Info("Can't find server")
-		handleError(w, types.RESTError{
+		handleError(w, models.RESTError{
 			Error:      "Error finding server identity",
 			StatusCode: http.StatusInternalServerError,
 		})
@@ -94,12 +94,12 @@ func (mh *messages) channelHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	decoder := json.NewDecoder(r.Body)
-	var message types.GameMessage
+	var message models.GameMessage
 
 	err = decoder.Decode(&message)
 	if err != nil {
 		mhLog.WithError(err).Error("Invalid JSON")
-		if err := handleError(w, types.RESTError{
+		if err := handleError(w, models.RESTError{
 			Error:      "Invalid request",
 			StatusCode: http.StatusBadRequest,
 		}); err != nil {
@@ -118,7 +118,7 @@ func (mh *messages) channelHandler(w http.ResponseWriter, r *http.Request) {
 	// sending message
 	if err := mh.dms.SendGameMessage(message, mh.timeout); err != nil {
 		mhLog.Error("timed out sending message to channel")
-		if err := handleError(w, types.RESTError{
+		if err := handleError(w, models.RESTError{
 			Error:      "internal error sending message to discord handler",
 			StatusCode: http.StatusInternalServerError,
 		}); err != nil {
@@ -140,7 +140,7 @@ func (mh *messages) channelHandler(w http.ResponseWriter, r *http.Request) {
 				status = http.StatusInternalServerError
 			}
 			mhLog.WithError(err).Error("error from discord handler")
-			if err := handleError(w, types.RESTError{
+			if err := handleError(w, models.RESTError{
 				Error:      err.Error(),
 				StatusCode: status,
 			}); err != nil {
@@ -151,7 +151,7 @@ func (mh *messages) channelHandler(w http.ResponseWriter, r *http.Request) {
 		mhLog.WithError(err).Trace("message chan returned")
 	case <-time.After(mh.timeout):
 		mhLog.Error("timed out receiving discord response")
-		if err := handleError(w, types.RESTError{
+		if err := handleError(w, models.RESTError{
 			Error:      "internal error receiving discord response",
 			StatusCode: http.StatusInternalServerError,
 		}); err != nil {

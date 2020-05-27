@@ -4,7 +4,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/poundbot/poundbot/types"
+	"github.com/poundbot/poundbot/pkg/models"
 )
 
 func Test_serverClan_ToClan(t *testing.T) {
@@ -19,17 +19,17 @@ func Test_serverClan_ToClan(t *testing.T) {
 	tests := []struct {
 		name   string
 		fields fields
-		want   types.Clan
+		want   models.Clan
 	}{
 		{
 			name:   "RustIO Clan",
 			fields: fields{Tag: "PS", Owner: "1", Members: []string{"1", "2", "3"}, Moderators: []string{"2"}},
-			want:   types.Clan{Tag: "PS", OwnerID: "1", Members: []string{"1", "2", "3"}, Moderators: []string{"2"}},
+			want:   models.Clan{Tag: "PS", OwnerID: "1", Members: []string{"1", "2", "3"}, Moderators: []string{"2"}},
 		},
 		{
 			name:   "Clans Clan",
 			fields: fields{ClanTag: "PS", OwnerID: "1", Members: []string{"1", "2", "3"}, Moderators: []string{"2"}},
-			want:   types.Clan{Tag: "PS", OwnerID: "1", Members: []string{"1", "2", "3"}, Moderators: []string{"2"}},
+			want:   models.Clan{Tag: "PS", OwnerID: "1", Members: []string{"1", "2", "3"}, Moderators: []string{"2"}},
 		},
 	}
 	for _, tt := range tests {

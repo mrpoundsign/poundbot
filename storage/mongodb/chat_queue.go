@@ -5,18 +5,18 @@ import (
 
 	"github.com/globalsign/mgo"
 	"github.com/globalsign/mgo/bson"
-	"github.com/poundbot/poundbot/types"
+	"github.com/poundbot/poundbot/pkg/models"
 )
 
 type ChatQueue struct {
 	collection *mgo.Collection
 }
 
-func (cq ChatQueue) InsertMessage(m types.ChatMessage) error {
+func (cq ChatQueue) InsertMessage(m models.ChatMessage) error {
 	return cq.collection.Insert(m)
 }
 
-func (cq ChatQueue) GetGameServerMessage(sk, tag string, to time.Duration) (types.ChatMessage, bool) {
+func (cq ChatQueue) GetGameServerMessage(sk, tag string, to time.Duration) (models.ChatMessage, bool) {
 	sess := cq.collection.Database.Session.Copy()
 	defer sess.Close()
 
@@ -29,7 +29,7 @@ func (cq ChatQueue) GetGameServerMessage(sk, tag string, to time.Duration) (type
 	).Tail(to)
 	defer iter.Close()
 
-	var cm types.ChatMessage
+	var cm models.ChatMessage
 	for iter.Next(&cm) {
 		err := cq.collection.Update(
 			bson.M{"_id": cm.ID, "senttoserver": false},

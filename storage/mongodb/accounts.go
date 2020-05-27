@@ -7,7 +7,7 @@ import (
 	"github.com/globalsign/mgo"
 	"github.com/globalsign/mgo/bson"
 	"github.com/poundbot/poundbot/pbclock"
-	"github.com/poundbot/poundbot/types"
+	"github.com/poundbot/poundbot/pkg/models"
 )
 
 const accountsKeyField = "guildsnowflake"
@@ -19,27 +19,27 @@ type Accounts struct {
 	collection *mgo.Collection
 }
 
-func (s Accounts) All(accounts *[]types.Account) error {
+func (s Accounts) All(accounts *[]models.Account) error {
 	return s.collection.Find(bson.M{}).All(accounts)
 }
 
-func (s Accounts) GetByDiscordGuild(key string) (types.Account, error) {
-	var account types.Account
+func (s Accounts) GetByDiscordGuild(key string) (models.Account, error) {
+	var account models.Account
 	err := s.collection.Find(bson.M{accountsKeyField: key}).One(&account)
 	return account, err
 }
 
-func (s Accounts) GetByServerKey(key string) (types.Account, error) {
-	var account types.Account
+func (s Accounts) GetByServerKey(key string) (models.Account, error) {
+	var account models.Account
 	err := s.collection.Find(bson.M{serverKeyField: key}).One(&account)
 	return account, err
 }
 
-func (s Accounts) UpsertBase(account types.BaseAccount) error {
+func (s Accounts) UpsertBase(account models.BaseAccount) error {
 	_, err := s.collection.Upsert(
 		bson.M{accountsKeyField: account.GuildSnowflake},
 		bson.M{
-			"$setOnInsert": types.NewTimestamp(),
+			"$setOnInsert": models.NewTimestamp(),
 			"$set":         account,
 		},
 	)
@@ -53,7 +53,7 @@ func (s Accounts) Remove(key string) error {
 	)
 }
 
-func (s Accounts) AddClan(serverKey string, clan types.Clan) error {
+func (s Accounts) AddClan(serverKey string, clan models.Clan) error {
 	return s.collection.Update(
 		bson.M{serverKeyField: serverKey},
 		bson.M{
@@ -69,14 +69,14 @@ func (s Accounts) RemoveClan(serverKey, clanTag string) error {
 	)
 }
 
-func (s Accounts) SetClans(serverKey string, clans []types.Clan) error {
+func (s Accounts) SetClans(serverKey string, clans []models.Clan) error {
 	return s.collection.Update(
 		bson.M{serverKeyField: serverKey},
 		bson.M{"$set": bson.M{"servers.$.clans": clans}},
 	)
 }
 
-func (s Accounts) AddServer(snowflake string, server types.AccountServer) error {
+func (s Accounts) AddServer(snowflake string, server models.AccountServer) error {
 	server.CreatedAt = iclock().Now().UTC()
 	return s.collection.Update(
 		bson.M{accountsKeyField: snowflake},
@@ -91,7 +91,7 @@ func (s Accounts) RemoveServer(snowflake, serverKey string) error {
 	)
 }
 
-func (s Accounts) UpdateServer(snowflake, oldKey string, server types.AccountServer) error {
+func (s Accounts) UpdateServer(snowflake, oldKey string, server models.AccountServer) error {
 	return s.collection.Update(
 		bson.M{
 			accountsKeyField: snowflake,
@@ -101,15 +101,15 @@ func (s Accounts) UpdateServer(snowflake, oldKey string, server types.AccountSer
 	)
 }
 
-func (s Accounts) RemoveNotInDiscordGuildList(guilds []types.BaseAccount) error {
-	insertTS := types.NewTimestamp()
+func (s Accounts) RemoveNotInDiscordGuildList(guilds []models.BaseAccount) error {
+	insertTS := models.NewTimestamp()
 	insertTS.CreatedAt = iclock().Now().UTC()
 	guildIDs := make([]string, len(guilds))
 
 	type doc struct {
-		types.BaseAccount `bson:",inline"`
-		Disabled          bool
-		UpdatedAt         time.Time
+		models.BaseAccount `bson:",inline"`
+		Disabled           bool
+		UpdatedAt          time.Time
 	}
 
 	for i, guild := range guilds {

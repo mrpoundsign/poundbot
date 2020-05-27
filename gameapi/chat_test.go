@@ -10,7 +10,7 @@ import (
 
 	"github.com/globalsign/mgo/bson"
 	"github.com/poundbot/poundbot/pbclock"
-	"github.com/poundbot/poundbot/types"
+	"github.com/poundbot/poundbot/pkg/models"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -19,18 +19,18 @@ type chatQueueMock struct {
 }
 
 type discordMessageHandler struct {
-	message *types.ChatMessage
+	message *models.ChatMessage
 }
 
-func (dmh *discordMessageHandler) SendChatMessage(cm types.ChatMessage) {
+func (dmh *discordMessageHandler) SendChatMessage(cm models.ChatMessage) {
 	dmh.message = &cm
 }
 
-func (cqm chatQueueMock) GetGameServerMessage(sk, tag string, to time.Duration) (types.ChatMessage, bool) {
+func (cqm chatQueueMock) GetGameServerMessage(sk, tag string, to time.Duration) (models.ChatMessage, bool) {
 	if !cqm.message {
-		return types.ChatMessage{}, false
+		return models.ChatMessage{}, false
 	}
-	cm := types.ChatMessage{
+	cm := models.ChatMessage{
 		PlayerID:    "1234",
 		ClanTag:     "FoO",
 		DisplayName: "player",
@@ -46,12 +46,12 @@ func TestChat_Handle(t *testing.T) {
 	tests := []struct {
 		name     string
 		s        *chat
-		method   string             // http method
-		body     string             // response body
-		status   int                // response status
-		dMessage bool               // true if there is a discord message in queue
-		rBody    string             // request body
-		rMessage *types.ChatMessage // message from Rust
+		method   string              // http method
+		body     string              // response body
+		status   int                 // response status
+		dMessage bool                // true if there is a discord message in queue
+		rBody    string              // request body
+		rMessage *models.ChatMessage // message from Rust
 		log      string
 	}{
 		{
@@ -85,13 +85,13 @@ func TestChat_Handle(t *testing.T) {
 			ctx := context.WithValue(context.Background(), contextKeyRequestUUID, "request-1")
 			ctx = context.WithValue(ctx, contextKeyServerKey, "bloop")
 			ctx = context.WithValue(ctx, contextKeyGame, "game")
-			ctx = context.WithValue(ctx, contextKeyAccount, types.Account{
+			ctx = context.WithValue(ctx, contextKeyAccount, models.Account{
 				ID: bson.ObjectIdHex("5cafadc080e1a9498fea8f03"),
-				Servers: []types.AccountServer{
+				Servers: []models.AccountServer{
 					{
 						Key:  "bloop",
 						Name: "server-name",
-						Channels: []types.AccountServerChannel{
+						Channels: []models.AccountServerChannel{
 							{ChannelID: "1234", Tags: []string{"chat"}},
 						},
 					},

@@ -1,4 +1,4 @@
-package types
+package models
 
 // RESTError Generic REST error response
 type RESTError struct {

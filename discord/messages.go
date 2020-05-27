@@ -8,7 +8,7 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
-	"github.com/poundbot/poundbot/types"
+	"github.com/poundbot/poundbot/pkg/models"
 	"github.com/sirupsen/logrus"
 )
 
@@ -106,12 +106,12 @@ func (r *Runner) messageCreate(s *discordgo.Session, m *discordgo.MessageCreate)
 		csLog := mcLog.WithFields(logrus.Fields{"serverID": server.Key[:4]})
 		for _, cTag := range cTags {
 			csLog.WithFields(logrus.Fields{"t": cTag}).Trace("inserting message")
-			cm := types.ChatMessage{
+			cm := models.ChatMessage{
 				ServerKey:   server.Key,
 				Tag:         cTag,
 				DisplayName: m.Author.Username,
 				Message:     m.Message.Content,
-				DiscordInfo: types.DiscordInfo{
+				DiscordInfo: models.DiscordInfo{
 					Snowflake:   m.Author.ID,
 					DiscordName: m.Author.String(),
 				},
@@ -155,28 +155,28 @@ type messageChannelsGetter interface {
 	Guild(guildID string) (st *discordgo.Guild, err error)
 }
 
-func sendChannelList(userID, guildID string, ch chan<- types.ServerChannelsResponse, mgg messageChannelsGetter) error {
+func sendChannelList(userID, guildID string, ch chan<- models.ServerChannelsResponse, mgg messageChannelsGetter) error {
 	sclLog := log.WithFields(logrus.Fields{"sys": "RUN", "ssys": "sendChannelList", "gID": guildID, "uID": userID})
 	defer close(ch)
 	guild, err := mgg.Guild(guildID)
 	if err != nil {
-		ch <- types.ServerChannelsResponse{OK: false}
+		ch <- models.ServerChannelsResponse{OK: false}
 		sclLog.WithError(err).Warn("Could not find guild")
 		return fmt.Errorf("could not find guild with id %s: %w", guildID, err)
 	}
 
-	r := types.ServerChannelsResponse{OK: true}
+	r := models.ServerChannelsResponse{OK: true}
 	for _, channel := range guild.Channels {
 		canSend, err := canSendToChannel(mgg, userID, channel.ID)
 		if err != nil {
-			ch <- types.ServerChannelsResponse{OK: false}
+			ch <- models.ServerChannelsResponse{OK: false}
 			sclLog.WithError(err).Warn("Can not send to channel")
 			return fmt.Errorf("channel send failed, %w", err)
 		}
 
 		canEmbed, err := canEmbedToChannel(mgg, userID, channel.ID)
 		if err != nil {
-			ch <- types.ServerChannelsResponse{OK: false}
+			ch <- models.ServerChannelsResponse{OK: false}
 			sclLog.WithError(err).Warn("Cannot embed to channel")
 			return fmt.Errorf("channel embed failed, %w", err)
 		}
@@ -185,7 +185,7 @@ func sendChannelList(userID, guildID string, ch chan<- types.ServerChannelsRespo
 			continue
 		}
 
-		r.Channels = append(r.Channels, types.ServerChannel{ID: channel.ID, Name: channel.Name, CanSend: canSend, CanStyle: canEmbed})
+		r.Channels = append(r.Channels, models.ServerChannel{ID: channel.ID, Name: channel.Name, CanSend: canSend, CanStyle: canEmbed})
 	}
 	ch <- r
 	return nil

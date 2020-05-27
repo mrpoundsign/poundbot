@@ -4,37 +4,37 @@ import (
 	"testing"
 	"time"
 
+	"github.com/poundbot/poundbot/pkg/models"
 	"github.com/poundbot/poundbot/storage/mocks"
-	"github.com/poundbot/poundbot/types"
 	"github.com/stretchr/testify/assert"
 )
 
 type raidHandler struct {
-	RaidAlert *types.RaidAlert
+	RaidAlert *models.RaidAlert
 }
 
-func (rh *raidHandler) RaidNotify(ra types.RaiAlertWithMessageChannel) {
+func (rh *raidHandler) RaidNotify(ra models.RaiAlertWithMessageChannel) {
 	rh.RaidAlert = &ra.RaidAlert
 }
 
 func TestRaidAlerter_Run(t *testing.T) {
 	t.Parallel()
 
-	miu := func(ra types.RaiAlertWithMessageChannel, is messageIDSetter) {}
+	miu := func(ra models.RaiAlertWithMessageChannel, is messageIDSetter) {}
 
-	var ra = types.RaidAlert{PlayerID: "1234"}
+	var ra = models.RaidAlert{PlayerID: "1234"}
 
 	tests := []struct {
 		name       string
-		raidAlerts []types.RaidAlert
-		want       *types.RaidAlert
+		raidAlerts []models.RaidAlert
+		want       *models.RaidAlert
 	}{
 		{
 			name: "With nothing",
 		},
 		{
 			name:       "With RaidAlert",
-			raidAlerts: []types.RaidAlert{ra},
+			raidAlerts: []models.RaidAlert{ra},
 			want:       &ra,
 		},
 	}
@@ -48,7 +48,7 @@ func TestRaidAlerter_Run(t *testing.T) {
 			mockRA := mocks.RaidAlertsStore{}
 
 			mockRA.On("GetReady").
-				Return(func() []types.RaidAlert {
+				Return(func() []models.RaidAlert {
 					done <- struct{}{}
 					return tt.raidAlerts
 				}, nil)

@@ -9,13 +9,13 @@ import (
 	"github.com/blang/semver"
 	"github.com/gorilla/mux"
 	"github.com/poundbot/poundbot/pbclock"
-	"github.com/poundbot/poundbot/types"
+	"github.com/poundbot/poundbot/pkg/models"
 )
 
 var iclock = pbclock.Clock
 
 type chatQueue interface {
-	GetGameServerMessage(sk, tag string, to time.Duration) (types.ChatMessage, bool)
+	GetGameServerMessage(sk, tag string, to time.Duration) (models.ChatMessage, bool)
 }
 
 type discordChat struct {
@@ -24,7 +24,7 @@ type discordChat struct {
 	Message     string
 }
 
-func newDiscordChat(cm types.ChatMessage) discordChat {
+func newDiscordChat(cm models.ChatMessage) discordChat {
 	return discordChat{
 		ClanTag:     cm.ClanTag,
 		DisplayName: cm.DisplayName,
@@ -60,7 +60,7 @@ func (c *chat) handle(w http.ResponseWriter, r *http.Request) {
 	sc, err := getServerContext(r.Context())
 	if err != nil {
 		log.Info(fmt.Sprintf("[%s](%s:%s) Can't find server: %s", sc.requestUUID, sc.account.ID.Hex(), sc.serverKey, err.Error()))
-		handleError(w, types.RESTError{
+		handleError(w, models.RESTError{
 			Error:      "Error finding server identity",
 			StatusCode: http.StatusForbidden,
 		})

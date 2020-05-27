@@ -5,8 +5,8 @@ import (
 
 	"github.com/globalsign/mgo"
 	"github.com/globalsign/mgo/bson"
+	"github.com/poundbot/poundbot/pkg/models"
 	"github.com/poundbot/poundbot/storage"
-	"github.com/poundbot/poundbot/types"
 )
 
 const userPlayerIDsField = "playerids"
@@ -18,14 +18,14 @@ type Users struct {
 }
 
 // Get implements db.UsersStore.Get
-func (u Users) GetByPlayerID(gameUserID string) (types.User, error) {
-	var user types.User
+func (u Users) GetByPlayerID(gameUserID string) (models.User, error) {
+	var user models.User
 	err := u.collection.Find(bson.M{userPlayerIDsField: gameUserID}).One(&user)
 	return user, err
 }
 
-func (u Users) GetByDiscordID(snowflake string) (types.User, error) {
-	var user types.User
+func (u Users) GetByDiscordID(snowflake string) (models.User, error) {
+	var user models.User
 	err := u.collection.Find(bson.M{userSnowflakeField: snowflake}).One(&user)
 	return user, err
 }

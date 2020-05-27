@@ -1,4 +1,4 @@
-package types
+package models
 
 type ServerChannel struct {
 	ID       string

@@ -3,8 +3,8 @@ package gameapi
 import (
 	"testing"
 
+	"github.com/poundbot/poundbot/pkg/models"
 	"github.com/poundbot/poundbot/storage/mocks"
-	"github.com/poundbot/poundbot/types"
 )
 
 func TestAuthSaver_Run(t *testing.T) {
@@ -17,21 +17,21 @@ func TestAuthSaver_Run(t *testing.T) {
 
 	tests := []struct {
 		name string
-		a    func(<-chan types.DiscordAuth) *AuthSaver
-		with *types.DiscordAuth
-		want *types.DiscordAuth
+		a    func(<-chan models.DiscordAuth) *AuthSaver
+		with *models.DiscordAuth
+		want *models.DiscordAuth
 	}{
 		{
 			name: "With nothing",
-			a: func(ch <-chan types.DiscordAuth) *AuthSaver {
+			a: func(ch <-chan models.DiscordAuth) *AuthSaver {
 				return newAuthSaver(mockDA, mockU, ch, done)
 			},
 		},
 		{
 			name: "With AuthSuccess",
 
-			a: func(ch <-chan types.DiscordAuth) *AuthSaver {
-				result := types.DiscordAuth{PlayerID: "game:1001"}
+			a: func(ch <-chan models.DiscordAuth) *AuthSaver {
+				result := models.DiscordAuth{PlayerID: "game:1001"}
 				mockU = &mocks.UsersStore{}
 				mockU.On("UpsertPlayer", result).Return(nil)
 
@@ -40,8 +40,8 @@ func TestAuthSaver_Run(t *testing.T) {
 
 				return newAuthSaver(mockDA, mockU, ch, done)
 			},
-			with: &types.DiscordAuth{PlayerID: "game:1001"},
-			want: &types.DiscordAuth{PlayerID: "game:1001"},
+			with: &models.DiscordAuth{PlayerID: "game:1001"},
+			want: &models.DiscordAuth{PlayerID: "game:1001"},
 		},
 	}
 	for _, tt := range tests {
@@ -52,7 +52,7 @@ func TestAuthSaver_Run(t *testing.T) {
 		}
 
 		t.Run(tt.name, func(t *testing.T) {
-			ch := make(chan types.DiscordAuth)
+			ch := make(chan models.DiscordAuth)
 			var server = tt.a(ch)
 
 			go func() {

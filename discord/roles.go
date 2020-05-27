@@ -2,9 +2,10 @@ package discord
 
 import (
 	"errors"
+
 	"github.com/bwmarrin/discordgo"
 	"github.com/globalsign/mgo"
-	"github.com/poundbot/poundbot/types"
+	"github.com/poundbot/poundbot/pkg/models"
 	"github.com/sirupsen/logrus"
 )
 
@@ -13,8 +14,8 @@ type roleGuildGetter interface {
 }
 
 type rolePlayerGetter interface {
-	GetByPlayerID(PlayerID string) (types.User, error)
-	GetByDiscordID(snowflake string) (types.User, error)
+	GetByPlayerID(PlayerID string) (models.User, error)
+	GetByDiscordID(snowflake string) (models.User, error)
 }
 
 type roleMemberAdder interface {
@@ -22,7 +23,7 @@ type roleMemberAdder interface {
 	GuildMemberRoleRemove(guildID, userID, roleID string) (err error)
 }
 
-func rolesSetHandler(userID string, rs types.RoleSet, state roleGuildGetter, rpg rolePlayerGetter, rma roleMemberAdder) {
+func rolesSetHandler(userID string, rs models.RoleSet, state roleGuildGetter, rpg rolePlayerGetter, rma roleMemberAdder) {
 	rsLog := log.WithFields(logrus.Fields{"cmd": "rolesSetHandler", "rsRole": rs.Role, "gID": rs.GuildID})
 	rsLog.Tracef("roles set: %s", rs)
 	guild, err := state.Guild(rs.GuildID)

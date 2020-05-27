@@ -3,7 +3,7 @@ package storage
 import (
 	"time"
 
-	"github.com/poundbot/poundbot/types"
+	"github.com/poundbot/poundbot/pkg/models"
 )
 
 type UserInfoGetter interface {
@@ -12,8 +12,8 @@ type UserInfoGetter interface {
 }
 
 type ChatQueueStore interface {
-	GetGameServerMessage(serverKey, tag string, timeout time.Duration) (message types.ChatMessage, success bool)
-	InsertMessage(message types.ChatMessage) error
+	GetGameServerMessage(serverKey, tag string, timeout time.Duration) (message models.ChatMessage, success bool)
+	InsertMessage(message models.ChatMessage) error
 }
 
 type MessageLocksStore interface {
@@ -33,8 +33,8 @@ type MessageLocksStore interface {
 //
 // SetClanIn sets the clan tag on all users who have the provided steam IDs.
 type UsersStore interface {
-	GetByPlayerID(PlayerID string) (types.User, error)
-	GetByDiscordID(snowflake string) (types.User, error)
+	GetByPlayerID(PlayerID string) (models.User, error)
+	GetByDiscordID(snowflake string) (models.User, error)
 	GetPlayerIDsByDiscordIDs(snowflakes []string) ([]string, error)
 	UpsertPlayer(info UserInfoGetter) error
 	RemovePlayerID(snowflake, playerID string) error
@@ -47,14 +47,14 @@ type UsersStore interface {
 //
 // Remove removes a discord auth
 type DiscordAuthsStore interface {
-	GetByDiscordName(discordName string) (types.DiscordAuth, error)
-	GetByDiscordID(snowflake string) (types.DiscordAuth, error)
-	Upsert(types.DiscordAuth) error
+	GetByDiscordName(discordName string) (models.DiscordAuth, error)
+	GetByDiscordID(snowflake string) (models.DiscordAuth, error)
+	Upsert(models.DiscordAuth) error
 	Remove(UserInfoGetter) error
 }
 
 // RaidAlertsStore is for accessing raid information. The raid information
-// comes in as types.EntityDeath and comes out as types.RaidAlert
+// comes in as models.EntityDeath and comes out as models.RaidAlert
 //
 // GetReady gets raid alerts that are ready to alert
 //
@@ -62,34 +62,34 @@ type DiscordAuthsStore interface {
 //
 // Remove deletes a raid alert
 type RaidAlertsStore interface {
-	GetReady() ([]types.RaidAlert, error)
-	AddInfo(alertIn, validUntil time.Duration, ed types.EntityDeath) error
-	Remove(types.RaidAlert) error
-	IncrementNotifyCount(types.RaidAlert) error
-	SetMessageID(types.RaidAlert, string) error
+	GetReady() ([]models.RaidAlert, error)
+	AddInfo(alertIn, validUntil time.Duration, ed models.EntityDeath) error
+	Remove(models.RaidAlert) error
+	IncrementNotifyCount(models.RaidAlert) error
+	SetMessageID(models.RaidAlert, string) error
 }
 
 // AccountsStore is for accounts storage
 type AccountsStore interface {
-	All(*[]types.Account) error
-	GetByDiscordGuild(snowflake string) (types.Account, error)
-	GetByServerKey(serverKey string) (types.Account, error)
-	UpsertBase(types.BaseAccount) error
+	All(*[]models.Account) error
+	GetByDiscordGuild(snowflake string) (models.Account, error)
+	GetByServerKey(serverKey string) (models.Account, error)
+	UpsertBase(models.BaseAccount) error
 	Remove(snowflake string) error
 
-	AddServer(snowflake string, server types.AccountServer) error
-	UpdateServer(snowflake, oldKey string, server types.AccountServer) error
+	AddServer(snowflake string, server models.AccountServer) error
+	UpdateServer(snowflake, oldKey string, server models.AccountServer) error
 	RemoveServer(snowflake, serverKey string) error
 
-	AddClan(serverKey string, clan types.Clan) error
+	AddClan(serverKey string, clan models.Clan) error
 	RemoveClan(serverKey, clanTag string) error
-	SetClans(serverKey string, clans []types.Clan) error
+	SetClans(serverKey string, clans []models.Clan) error
 
 	SetRegisteredPlayerIDs(accountID string, playerIDsList []string) error
 	AddRegisteredPlayerIDs(accountID string, playerIDs []string) error
 	RemoveRegisteredPlayerIDs(accountID string, playerIDs []string) error
 
-	RemoveNotInDiscordGuildList(guildIDs []types.BaseAccount) error
+	RemoveNotInDiscordGuildList(guildIDs []models.BaseAccount) error
 	Touch(serverKey string) error
 }
 

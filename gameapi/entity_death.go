@@ -8,15 +8,15 @@ import (
 
 	"github.com/blang/semver"
 	"github.com/gorilla/mux"
-	"github.com/poundbot/poundbot/types"
+	"github.com/poundbot/poundbot/pkg/models"
 )
 
 type raidAlertAdder interface {
-	AddInfo(alertIn, validUntil time.Duration, ed types.EntityDeath) error
+	AddInfo(alertIn, validUntil time.Duration, ed models.EntityDeath) error
 }
 
 type deprecatedEntityDeath struct {
-	types.EntityDeath
+	models.EntityDeath
 	Owners []int64
 }
 
@@ -53,7 +53,7 @@ func (e *entityDeath) handle(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		edLog.WithError(err).Info("Can't find server")
-		handleError(w, types.RESTError{
+		handleError(w, models.RESTError{
 			Error:      "Error finding server identity",
 			StatusCode: http.StatusInternalServerError,
 		})
@@ -65,7 +65,7 @@ func (e *entityDeath) handle(w http.ResponseWriter, r *http.Request) {
 	err = decoder.Decode(&ed)
 	if err != nil {
 		edLog.WithError(err).Error("Invalid JSON")
-		handleError(w, types.RESTError{
+		handleError(w, models.RESTError{
 			Error:      "Invalid request",
 			StatusCode: http.StatusBadRequest,
 		})

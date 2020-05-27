@@ -7,8 +7,8 @@ import (
 	"time"
 
 	"github.com/poundbot/poundbot/pbclock"
+	"github.com/poundbot/poundbot/pkg/models"
 	"github.com/poundbot/poundbot/storage"
-	"github.com/poundbot/poundbot/types"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
@@ -26,13 +26,13 @@ type Runner struct {
 	us              storage.UsersStore
 	token           string
 	status          chan bool
-	chatChan        chan types.ChatMessage
-	raidAlertChan   chan types.RaiAlertWithMessageChannel
-	gameMessageChan chan types.GameMessage
-	authChan        chan types.DiscordAuth
-	AuthSuccess     chan types.DiscordAuth
-	channelsRequest chan types.ServerChannelsRequest
-	roleSetChan     chan types.RoleSet
+	chatChan        chan models.ChatMessage
+	raidAlertChan   chan models.RaiAlertWithMessageChannel
+	gameMessageChan chan models.GameMessage
+	authChan        chan models.DiscordAuth
+	AuthSuccess     chan models.DiscordAuth
+	channelsRequest chan models.ServerChannelsRequest
+	roleSetChan     chan models.RoleSet
 	shutdown        bool
 }
 
@@ -45,13 +45,13 @@ func NewRunner(token string, as storage.AccountsStore, das storage.DiscordAuthsS
 		das:             das,
 		us:              us,
 		token:           token,
-		chatChan:        make(chan types.ChatMessage),
-		authChan:        make(chan types.DiscordAuth),
-		AuthSuccess:     make(chan types.DiscordAuth),
-		raidAlertChan:   make(chan types.RaiAlertWithMessageChannel),
-		gameMessageChan: make(chan types.GameMessage),
-		channelsRequest: make(chan types.ServerChannelsRequest),
-		roleSetChan:     make(chan types.RoleSet),
+		chatChan:        make(chan models.ChatMessage),
+		authChan:        make(chan models.DiscordAuth),
+		AuthSuccess:     make(chan models.DiscordAuth),
+		raidAlertChan:   make(chan models.RaiAlertWithMessageChannel),
+		gameMessageChan: make(chan models.GameMessage),
+		channelsRequest: make(chan models.ServerChannelsRequest),
+		roleSetChan:     make(chan models.RoleSet),
 	}
 }
 
@@ -78,20 +78,20 @@ func (r *Runner) Start() error {
 	return err
 }
 
-func (r Runner) RaidNotify(ra types.RaiAlertWithMessageChannel) {
+func (r Runner) RaidNotify(ra models.RaiAlertWithMessageChannel) {
 	r.raidAlertChan <- ra
 }
 
-func (r Runner) AuthDiscord(da types.DiscordAuth) {
+func (r Runner) AuthDiscord(da models.DiscordAuth) {
 	r.authChan <- da
 }
 
-func (r Runner) SendChatMessage(cm types.ChatMessage) {
+func (r Runner) SendChatMessage(cm models.ChatMessage) {
 	r.chatChan <- cm
 }
 
 // SendGameMessage sends a message from the game to a discord channel
-func (r Runner) SendGameMessage(gm types.GameMessage, timeout time.Duration) error {
+func (r Runner) SendGameMessage(gm models.GameMessage, timeout time.Duration) error {
 	select {
 	case r.gameMessageChan <- gm:
 		return nil
@@ -101,11 +101,11 @@ func (r Runner) SendGameMessage(gm types.GameMessage, timeout time.Duration) err
 }
 
 // ServerChannels sends a request to get the visible chnnels for a discord guild
-func (r Runner) ServerChannels(scr types.ServerChannelsRequest) {
+func (r Runner) ServerChannels(scr models.ServerChannelsRequest) {
 	r.channelsRequest <- scr
 }
 
-func (r Runner) SetRole(rs types.RoleSet, timeout time.Duration) error {
+func (r Runner) SetRole(rs models.RoleSet, timeout time.Duration) error {
 	// sending message
 	select {
 	case r.roleSetChan <- rs:
@@ -204,7 +204,7 @@ func (r *Runner) runner() {
 
 }
 
-func (r *Runner) discordAuthHandler(da types.DiscordAuth) {
+func (r *Runner) discordAuthHandler(da models.DiscordAuth) {
 	dLog := log.WithFields(logrus.Fields{
 		"chan": "DAUTH",
 		"gID":  da.GuildSnowflake,
@@ -264,9 +264,9 @@ func (r *Runner) ready(s *discordgo.Session, event *discordgo.Ready) {
 		log.WithError(err).Error("failed to update bot status")
 	}
 
-	guilds := make([]types.BaseAccount, len(s.State.Guilds))
+	guilds := make([]models.BaseAccount, len(s.State.Guilds))
 	for i, guild := range s.State.Guilds {
-		guilds[i] = types.BaseAccount{GuildSnowflake: guild.ID, OwnerSnowflake: guild.OwnerID}
+		guilds[i] = models.BaseAccount{GuildSnowflake: guild.ID, OwnerSnowflake: guild.OwnerID}
 	}
 	if err := r.as.RemoveNotInDiscordGuildList(guilds); err != nil {
 		log.WithError(err).Error("could not sync discord guilds")

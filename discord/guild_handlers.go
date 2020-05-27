@@ -3,14 +3,14 @@ package discord
 import (
 	"github.com/bwmarrin/discordgo"
 	"github.com/globalsign/mgo"
-	"github.com/poundbot/poundbot/types"
+	"github.com/poundbot/poundbot/pkg/models"
 	"github.com/sirupsen/logrus"
 )
 
 type guildCreateAccountStorer interface {
-	UpsertBase(types.BaseAccount) error
+	UpsertBase(models.BaseAccount) error
 	SetRegisteredPlayerIDs(ServerID string, IDs []string) error
-	GetByDiscordGuild(string) (types.Account, error)
+	GetByDiscordGuild(string) (models.Account, error)
 }
 
 type guildCreateUserGetter interface {
@@ -42,7 +42,7 @@ func (g guildCreate) guildCreate(s *discordgo.Session, gc *discordgo.GuildCreate
 			log.WithError(err).Error("Error loading account")
 			return
 		}
-		account.BaseAccount = types.BaseAccount{GuildSnowflake: gc.ID, OwnerSnowflake: gc.OwnerID}
+		account.BaseAccount = models.BaseAccount{GuildSnowflake: gc.ID, OwnerSnowflake: gc.OwnerID}
 	} else {
 		account.OwnerSnowflake = gc.OwnerID
 	}
@@ -84,11 +84,11 @@ func guildDelete(gr guildRemover, gID string) {
 }
 
 type userFinder interface {
-	GetByDiscordID(snowflake string) (types.User, error)
+	GetByDiscordID(snowflake string) (models.User, error)
 }
 
 type guildMemberAdder interface {
-	GetByDiscordGuild(key string) (types.Account, error)
+	GetByDiscordGuild(key string) (models.Account, error)
 	AddRegisteredPlayerIDs(accountSnowflake string, playerIDs []string) error
 }
 
@@ -119,7 +119,7 @@ func guildMemberAdd(uf userFinder, gma guildMemberAdder, gID, uID string) {
 }
 
 type guildMemberRemover interface {
-	GetByDiscordGuild(key string) (types.Account, error)
+	GetByDiscordGuild(key string) (models.Account, error)
 	RemoveRegisteredPlayerIDs(accountSnowflake string, playerIDs []string) error
 }
 

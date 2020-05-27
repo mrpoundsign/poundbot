@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/bwmarrin/discordgo"
-	"github.com/poundbot/poundbot/types"
+	"github.com/poundbot/poundbot/pkg/models"
 	"github.com/sirupsen/logrus"
 )
 
@@ -18,7 +18,7 @@ type gameDiscordMessageSender interface {
 type guildFinder func(string) (*discordgo.Guild, error)
 
 // gameMessageHandler handles the messages interface from games
-func gameMessageHandler(userID string, m types.GameMessage, gf guildFinder, ms gameDiscordMessageSender) {
+func gameMessageHandler(userID string, m models.GameMessage, gf guildFinder, ms gameDiscordMessageSender) {
 	defer close(m.ErrorResponse)
 
 	mhLog := log.WithFields(logrus.Fields{
@@ -74,9 +74,9 @@ func gameMessageHandler(userID string, m types.GameMessage, gf guildFinder, ms g
 	}
 
 	switch m.Type {
-	case types.GameMessageTypePlain:
+	case models.GameMessageTypePlain:
 		err = ms.sendChannelMessage(userID, channelID, message)
-	case types.GameMessageTypeEmbed:
+	case models.GameMessageTypeEmbed:
 		err = ms.sendChannelEmbed(userID, channelID, message, m.EmbedStyle.ColorInt())
 	}
 	if err != nil {
@@ -88,7 +88,7 @@ func gameMessageHandler(userID string, m types.GameMessage, gf guildFinder, ms g
 }
 
 // gameChatHandler handles game chat messages
-func gameChatHandler(userID string, cm types.ChatMessage, gf guildFinder, ms gameDiscordMessageSender) {
+func gameChatHandler(userID string, cm models.ChatMessage, gf guildFinder, ms gameDiscordMessageSender) {
 	ccLog := log.WithFields(logrus.Fields{
 		"cmd":   "gameChatHandler",
 		"pID":   cm.PlayerID,

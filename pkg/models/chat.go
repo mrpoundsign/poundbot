@@ -1,4 +1,4 @@
-package types
+package models
 
 import "github.com/globalsign/mgo/bson"
 

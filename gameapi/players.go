@@ -6,7 +6,7 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
-	"github.com/poundbot/poundbot/types"
+	"github.com/poundbot/poundbot/pkg/models"
 )
 
 type playerIDs []string
@@ -26,7 +26,7 @@ func (p *registeredPlayers) handle(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		hLog.WithError(err).Info("Can't find server")
-		handleError(w, types.RESTError{
+		handleError(w, models.RESTError{
 			Error:      "Error finding server identity",
 			StatusCode: http.StatusInternalServerError,
 		})
