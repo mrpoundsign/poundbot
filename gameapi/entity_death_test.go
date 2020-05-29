@@ -58,34 +58,6 @@ func TestEntityDeath_Handle(t *testing.T) {
 			},
 			log: "auth success",
 		},
-		{
-			name:   "old API POST empty request",
-			e:      &entityDeath{},
-			method: http.MethodPost,
-			status: http.StatusBadRequest,
-			log:    "[request-1](5cafadc080e1a9498fea8f03:server1) Invalid JSON: EOF",
-		},
-		{
-			name:   "old API POST entity death",
-			e:      &entityDeath{},
-			method: http.MethodPost,
-			status: http.StatusOK,
-			rBody: `
-			{
-				"Name": "foo",
-				"GridPos": "A10",
-				"Owners": [1, 2, 3],
-				"CreatedAt": "2001-02-03T04:05:06Z"
-			}
-			`,
-			ed: &models.EntityDeath{
-				ServerName: "server1",
-				Name:       "foo",
-				GridPos:    "A10",
-				OwnerIDs:   []string{"game:1", "game:2", "game:3"},
-				Timestamp:  models.Timestamp{CreatedAt: time.Date(2001, 2, 3, 4, 5, 6, 0, time.UTC)},
-			},
-		},
 	}
 
 	for _, tt := range tests {

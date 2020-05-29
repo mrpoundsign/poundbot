@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/blang/semver"
-	"github.com/gorilla/mux"
 	"github.com/poundbot/poundbot/pbclock"
 	"github.com/poundbot/poundbot/pkg/models"
 )
@@ -40,7 +39,7 @@ type chat struct {
 }
 
 // initChat initializes a chat handler and returns it
-func initChat(api *mux.Router, path string, cq chatQueue) {
+func initChat(api muxFuncHandler, path string, cq chatQueue) {
 	c := chat{
 		cqs:        cq,
 		timeout:    10 * time.Second,

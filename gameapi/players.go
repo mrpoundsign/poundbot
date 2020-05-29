@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/gorilla/mux"
 	"github.com/poundbot/poundbot/pkg/models"
 )
 
@@ -13,7 +12,7 @@ type playerIDs []string
 
 type registeredPlayers struct{}
 
-func initPlayers(api *mux.Router, path string) {
+func initPlayers(api muxFuncHandler, path string) {
 	rp := registeredPlayers{}
 	api.HandleFunc(fmt.Sprintf("%s/registered", path), rp.handle).Methods(http.MethodGet)
 }

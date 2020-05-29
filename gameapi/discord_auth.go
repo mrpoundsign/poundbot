@@ -31,7 +31,7 @@ type discordAuthRequest struct {
 	models.DiscordAuth
 }
 
-func initDiscordAuth(api *mux.Router, path string, dau daAuthUpserter, us daUserGetter, dah discordAuthenticator) {
+func initDiscordAuth(api muxFuncHandler, path string, dau daAuthUpserter, us daUserGetter, dah discordAuthenticator) {
 	da := discordAuth{dau: dau, us: us, da: dah}
 	api.HandleFunc(path, da.createDiscordAuth).Methods("PUT")
 	api.HandleFunc(fmt.Sprintf("%s/check/{player_id}", path), da.checkPlayer).Methods("GET")

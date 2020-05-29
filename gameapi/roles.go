@@ -19,7 +19,7 @@ type roles struct {
 	timeout time.Duration
 }
 
-func initRoles(api *mux.Router, path string, drs discordRoleSetter) {
+func initRoles(api muxFuncHandler, path string, drs discordRoleSetter) {
 	r := roles{drs: drs, timeout: 10 * time.Second}
 
 	api.HandleFunc(fmt.Sprintf("%s/{role_name}", path), r.roleHandler).

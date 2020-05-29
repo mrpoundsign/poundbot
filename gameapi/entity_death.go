@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/blang/semver"
-	"github.com/gorilla/mux"
 	"github.com/poundbot/poundbot/pkg/models"
 )
 
@@ -15,29 +14,12 @@ type raidAlertAdder interface {
 	AddInfo(alertIn, validUntil time.Duration, ed models.EntityDeath) error
 }
 
-type deprecatedEntityDeath struct {
-	models.EntityDeath
-	Owners []int64
-}
-
-func (d *deprecatedEntityDeath) upgrade() {
-	if len(d.Owners) == 0 {
-		return
-	}
-
-	d.OwnerIDs = make([]string, len(d.Owners))
-
-	for i := range d.Owners {
-		d.OwnerIDs[i] = fmt.Sprintf("%d", d.Owners[i])
-	}
-}
-
 type entityDeath struct {
 	raa        raidAlertAdder
 	minVersion semver.Version
 }
 
-func initEntityDeath(api *mux.Router, path string, raa raidAlertAdder) {
+func initEntityDeath(api muxFuncHandler, path string, raa raidAlertAdder) {
 	ed := entityDeath{raa: raa, minVersion: semver.Version{Major: 1}}
 	api.HandleFunc(path, ed.handle)
 }
@@ -61,7 +43,7 @@ func (e *entityDeath) handle(w http.ResponseWriter, r *http.Request) {
 	}
 
 	decoder := json.NewDecoder(r.Body)
-	var ed deprecatedEntityDeath
+	var ed models.EntityDeath
 	err = decoder.Decode(&ed)
 	if err != nil {
 		edLog.WithError(err).Error("Invalid JSON")
@@ -71,8 +53,6 @@ func (e *entityDeath) handle(w http.ResponseWriter, r *http.Request) {
 		})
 		return
 	}
-
-	ed.upgrade()
 
 	for i := range ed.OwnerIDs {
 		ed.OwnerIDs[i] = fmt.Sprintf("%s:%s", sc.game, ed.OwnerIDs[i])
@@ -99,5 +79,5 @@ func (e *entityDeath) handle(w http.ResponseWriter, r *http.Request) {
 		validUntil = sValidUntil
 	}
 
-	e.raa.AddInfo(alertAt, validUntil, ed.EntityDeath)
+	e.raa.AddInfo(alertAt, validUntil, ed)
 }

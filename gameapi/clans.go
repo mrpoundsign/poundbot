@@ -40,7 +40,7 @@ type clans struct {
 	us storage.UsersStore
 }
 
-func initClans(api *mux.Router, path string, as storage.AccountsStore, us storage.UsersStore) {
+func initClans(api muxFuncHandler, path string, as storage.AccountsStore, us storage.UsersStore) {
 	c := clans{as: as, us: us}
 
 	api.HandleFunc(path, c.rootHandler).

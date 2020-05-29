@@ -63,13 +63,7 @@ func NewServer(sc *ServerConfig, dh discordHandler, channels ServerChannels) *Se
 	api.Use(sa.handle)
 	api.Use(requestUUID)
 
-	initEntityDeath(api, "/entity_death", sc.Storage.RaidAlerts())
-	initDiscordAuth(api, "/discord_auth", sc.Storage.DiscordAuths(), sc.Storage.Users(), dh)
-	initChat(api, "/chat", channels.ChatQueue)
-	initMessages(api, "/messages", dh)
-	initClans(api, "/clans", sc.Storage.Accounts(), sc.Storage.Users())
-	initRoles(api, "/roles", dh)
-	initPlayers(api, "/players")
+	s.routes(api)
 
 	s.Handler = r
 

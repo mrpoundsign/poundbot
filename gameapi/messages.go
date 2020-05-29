@@ -22,7 +22,7 @@ type messages struct {
 }
 
 // initMessages initializes a chat handler and returns it
-func initMessages(api *mux.Router, path string, dms discordMessageSender) {
+func initMessages(api muxFuncHandler, path string, dms discordMessageSender) {
 	m := messages{
 		dms:     dms,
 		timeout: 10 * time.Second,
