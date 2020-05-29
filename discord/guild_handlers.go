@@ -9,12 +9,12 @@ import (
 
 type guildCreateAccountStorer interface {
 	UpsertBase(models.BaseAccount) error
-	SetRegisteredPlayerIDs(ServerID string, IDs []string) error
+	SetRegisteredPlayerIDs(ServerID string, IDs []models.PlayerID) error
 	GetByDiscordGuild(string) (models.Account, error)
 }
 
 type guildCreateUserGetter interface {
-	GetPlayerIDsByDiscordIDs(snowflakes []string) ([]string, error)
+	GetPlayerIDsByDiscordIDs(snowflakes []models.PlayerDiscordID) ([]models.PlayerID, error)
 }
 
 type guildCreate struct {
@@ -30,9 +30,9 @@ func newGuildCreate(as guildCreateAccountStorer, ug guildCreateUserGetter) func(
 func (g guildCreate) guildCreate(s *discordgo.Session, gc *discordgo.GuildCreate) {
 	gcLog := log.WithFields(logrus.Fields{"sys": "guildCreate", "gID": gc.ID, "guildName": gc.Name})
 
-	userIDs := make([]string, len(gc.Members))
+	userIDs := make([]models.PlayerDiscordID, len(gc.Members))
 	for i, member := range gc.Members {
-		userIDs[i] = member.User.ID
+		userIDs[i] = models.PlayerDiscordID(member.User.ID)
 	}
 
 	account, err := g.as.GetByDiscordGuild(gc.ID)
@@ -42,9 +42,9 @@ func (g guildCreate) guildCreate(s *discordgo.Session, gc *discordgo.GuildCreate
 			log.WithError(err).Error("Error loading account")
 			return
 		}
-		account.BaseAccount = models.BaseAccount{GuildSnowflake: gc.ID, OwnerSnowflake: gc.OwnerID}
+		account.BaseAccount = models.BaseAccount{GuildSnowflake: gc.ID, OwnerSnowflake: models.PlayerDiscordID(gc.OwnerID)}
 	} else {
-		account.OwnerSnowflake = gc.OwnerID
+		account.OwnerSnowflake = models.PlayerDiscordID(gc.OwnerID)
 	}
 
 	err = g.as.UpsertBase(account.BaseAccount)
@@ -84,12 +84,12 @@ func guildDelete(gr guildRemover, gID string) {
 }
 
 type userFinder interface {
-	GetByDiscordID(snowflake string) (models.User, error)
+	GetByDiscordID(models.PlayerDiscordID) (models.User, error)
 }
 
 type guildMemberAdder interface {
 	GetByDiscordGuild(key string) (models.Account, error)
-	AddRegisteredPlayerIDs(accountSnowflake string, playerIDs []string) error
+	AddRegisteredPlayerIDs(accountSnowflake string, playerIDs []models.PlayerID) error
 }
 
 func newGuildMemberAdd(uf userFinder, gma guildMemberAdder) func(*discordgo.Session, *discordgo.GuildMemberAdd) {
@@ -100,7 +100,7 @@ func newGuildMemberAdd(uf userFinder, gma guildMemberAdder) func(*discordgo.Sess
 
 func guildMemberAdd(uf userFinder, gma guildMemberAdder, gID, uID string) {
 	gmaLog := log.WithFields(logrus.Fields{"sys": "guildMemberAdd", "gID": gID, "uID": uID})
-	user, err := uf.GetByDiscordID(uID)
+	user, err := uf.GetByDiscordID(models.PlayerDiscordID(uID))
 	if err != nil {
 		gmaLog.WithError(err).Trace("Error finding user")
 		return
@@ -120,7 +120,7 @@ func guildMemberAdd(uf userFinder, gma guildMemberAdder, gID, uID string) {
 
 type guildMemberRemover interface {
 	GetByDiscordGuild(key string) (models.Account, error)
-	RemoveRegisteredPlayerIDs(accountSnowflake string, playerIDs []string) error
+	RemoveRegisteredPlayerIDs(accountSnowflake string, pids []models.PlayerID) error
 }
 
 func newGuildMemberRemove(uf userFinder, gmr guildMemberRemover) func(*discordgo.Session, *discordgo.GuildMemberRemove) {
@@ -131,7 +131,7 @@ func newGuildMemberRemove(uf userFinder, gmr guildMemberRemover) func(*discordgo
 
 func guildMemberRemove(uf userFinder, gmr guildMemberRemover, gID, uID string) {
 	gmrLog := log.WithFields(logrus.Fields{"sys": "guildMemberRemove", "gID": gID, "uID": uID})
-	user, err := uf.GetByDiscordID(uID)
+	user, err := uf.GetByDiscordID(models.PlayerDiscordID(uID))
 	if err != nil {
 		gmrLog.WithError(err).Trace("Error finding user")
 		return

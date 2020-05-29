@@ -4,12 +4,15 @@ import (
 	"time"
 
 	"github.com/poundbot/poundbot/pkg/models"
+	"github.com/poundbot/poundbot/pkg/modules/account"
+	"github.com/poundbot/poundbot/pkg/modules/playerauth"
+	"github.com/poundbot/poundbot/pkg/modules/user"
 )
 
-type UserInfoGetter interface {
-	GetPlayerID() string
-	GetDiscordID() string
-}
+// type UserInfoGetter interface {
+// 	GetPlayerID() string
+// 	GetDiscordID() string
+// }
 
 type ChatQueueStore interface {
 	GetGameServerMessage(serverKey, tag string, timeout time.Duration) (message models.ChatMessage, success bool)
@@ -32,13 +35,13 @@ type MessageLocksStore interface {
 // list from all users in the data store.
 //
 // SetClanIn sets the clan tag on all users who have the provided steam IDs.
-type UsersStore interface {
-	GetByPlayerID(PlayerID string) (models.User, error)
-	GetByDiscordID(snowflake string) (models.User, error)
-	GetPlayerIDsByDiscordIDs(snowflakes []string) ([]string, error)
-	UpsertPlayer(info UserInfoGetter) error
-	RemovePlayerID(snowflake, playerID string) error
-}
+// type UsersStore interface {
+// 	GetByPlayerID(PlayerID string) (models.User, error)
+// 	GetByDiscordID(snowflake string) (models.User, error)
+// 	GetPlayerIDsByDiscordIDs(snowflakes []string) ([]string, error)
+// 	UpsertPlayer(info user.UserInfoGetter) error
+// 	RemovePlayerID(snowflake, playerID string) error
+// }
 
 // DiscordAuthsStore is for accessing the discord -> user authentications
 // in the store.
@@ -46,12 +49,12 @@ type UsersStore interface {
 // Upsert created or updates a discord auth
 //
 // Remove removes a discord auth
-type DiscordAuthsStore interface {
-	GetByDiscordName(discordName string) (models.DiscordAuth, error)
-	GetByDiscordID(snowflake string) (models.DiscordAuth, error)
-	Upsert(models.DiscordAuth) error
-	Remove(UserInfoGetter) error
-}
+// type DiscordAuthsStore interface {
+// 	GetByDiscordName(discordName string) (models.DiscordAuth, error)
+// 	GetByDiscordID(snowflake string) (models.DiscordAuth, error)
+// 	Upsert(models.DiscordAuth) error
+// 	Remove(playerauth.UserInfoGetter) error
+// }
 
 // RaidAlertsStore is for accessing raid information. The raid information
 // comes in as models.EntityDeath and comes out as models.RaidAlert
@@ -70,28 +73,28 @@ type RaidAlertsStore interface {
 }
 
 // AccountsStore is for accounts storage
-type AccountsStore interface {
-	All(*[]models.Account) error
-	GetByDiscordGuild(snowflake string) (models.Account, error)
-	GetByServerKey(serverKey string) (models.Account, error)
-	UpsertBase(models.BaseAccount) error
-	Remove(snowflake string) error
+// type AccountsStore interface {
+// 	All(*[]models.Account) error
+// 	GetByDiscordGuild(snowflake string) (models.Account, error)
+// 	GetByServerKey(serverKey string) (models.Account, error)
+// 	UpsertBase(models.BaseAccount) error
+// 	Remove(snowflake string) error
 
-	AddServer(snowflake string, server models.AccountServer) error
-	UpdateServer(snowflake, oldKey string, server models.AccountServer) error
-	RemoveServer(snowflake, serverKey string) error
+// 	AddServer(snowflake string, server models.AccountServer) error
+// 	UpdateServer(snowflake, oldKey string, server models.AccountServer) error
+// 	RemoveServer(snowflake, serverKey string) error
 
-	AddClan(serverKey string, clan models.Clan) error
-	RemoveClan(serverKey, clanTag string) error
-	SetClans(serverKey string, clans []models.Clan) error
+// 	AddClan(serverKey string, clan models.Clan) error
+// 	RemoveClan(serverKey, clanTag string) error
+// 	SetClans(serverKey string, clans []models.Clan) error
 
-	SetRegisteredPlayerIDs(accountID string, playerIDsList []string) error
-	AddRegisteredPlayerIDs(accountID string, playerIDs []string) error
-	RemoveRegisteredPlayerIDs(accountID string, playerIDs []string) error
+// 	SetRegisteredPlayerIDs(accountID string, playerIDsList []string) error
+// 	AddRegisteredPlayerIDs(accountID string, playerIDs []string) error
+// 	RemoveRegisteredPlayerIDs(accountID string, playerIDs []string) error
 
-	RemoveNotInDiscordGuildList(guildIDs []models.BaseAccount) error
-	Touch(serverKey string) error
-}
+// 	RemoveNotInDiscordGuildList(guildIDs []models.BaseAccount) error
+// 	Touch(serverKey string) error
+// }
 
 // Storage is a complete implementation of the data store for users,
 // clans, discord auth requests, raid alerts, and chats.
@@ -107,9 +110,9 @@ type Storage interface {
 	Copy() Storage
 	Close()
 	Init()
-	Accounts() AccountsStore
-	Users() UsersStore
-	DiscordAuths() DiscordAuthsStore
+	Accounts() account.Repo
+	Users() user.Repo
+	DiscordAuths() playerauth.Repo
 	RaidAlerts() RaidAlertsStore
 	ChatQueue() ChatQueueStore
 }

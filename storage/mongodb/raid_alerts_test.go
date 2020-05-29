@@ -108,8 +108,8 @@ func TestRaidAlerts_AddInfo(t *testing.T) {
 				ValidUntil:    existingValidUntil,
 			})
 
-			usersColl.C.Insert(models.BaseUser{GamesInfo: models.GamesInfo{PlayerIDs: []string{"2"}}})
-			usersColl.C.Insert(models.BaseUser{GamesInfo: models.GamesInfo{PlayerIDs: []string{"3"}}})
+			usersColl.C.Insert(models.BaseUser{GamesInfo: models.GamesInfo{PlayerIDs: []models.PlayerID{"2"}}})
+			usersColl.C.Insert(models.BaseUser{GamesInfo: models.GamesInfo{PlayerIDs: []models.PlayerID{"3"}}})
 
 			if err := raidAlerts.AddInfo(tt.args.alertIn, tt.args.validUntil, tt.args.ed); (err != nil) != tt.wantErr {
 				t.Errorf("RaidAlerts.AddInfo() error = %v, wantErr %v", err, tt.wantErr)

@@ -35,7 +35,7 @@ type instructAccountUpdater interface {
 	RemoveServer(snowflake, serverKey string) error
 }
 
-func instruct(botID, channelID, authorID, message string, account models.Account, au instructAccountUpdater) instructResponse {
+func instruct(authorID models.PlayerDiscordID, botID, channelID, message string, account models.Account, au instructAccountUpdater) instructResponse {
 	guildID := account.GuildSnowflake
 	adminIDs := account.GetAdminIDs()
 	iLog := log.WithFields(logrus.Fields{

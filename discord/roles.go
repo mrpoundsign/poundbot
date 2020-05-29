@@ -14,8 +14,8 @@ type roleGuildGetter interface {
 }
 
 type rolePlayerGetter interface {
-	GetByPlayerID(PlayerID string) (models.User, error)
-	GetByDiscordID(snowflake string) (models.User, error)
+	GetByPlayerID(models.PlayerID) (models.User, error)
+	GetByDiscordID(models.PlayerDiscordID) (models.User, error)
 }
 
 type roleMemberAdder interface {
@@ -85,7 +85,7 @@ func rolesSetHandler(userID string, rs models.RoleSet, state roleGuildGetter, rp
 			}
 		}
 
-		u, err := rpg.GetByDiscordID(member.User.ID)
+		u, err := rpg.GetByDiscordID(models.PlayerDiscordID(member.User.ID))
 		if err != nil {
 			if err != mgo.ErrNotFound {
 				rsLog.WithError(err).Error("storage error finding user")

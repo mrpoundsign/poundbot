@@ -17,6 +17,9 @@ import (
 	"github.com/poundbot/poundbot/gameapi"
 	pblog "github.com/poundbot/poundbot/log"
 	"github.com/poundbot/poundbot/messages"
+	"github.com/poundbot/poundbot/pkg/modules/account"
+	"github.com/poundbot/poundbot/pkg/modules/playerauth"
+	"github.com/poundbot/poundbot/pkg/modules/user"
 	"github.com/poundbot/poundbot/storage/mongodb"
 	"github.com/spf13/viper"
 )
@@ -43,7 +46,6 @@ func newServerConfig(cfg *viper.Viper, storage *mongodb.MongoDB) *gameapi.Server
 	return &gameapi.ServerConfig{
 		BindAddr: cfg.GetString("http.bind_address"),
 		Port:     cfg.GetInt("http.port"),
-		Storage:  storage,
 	}
 }
 
@@ -154,6 +156,10 @@ func main() {
 	store.Init()
 
 	webConfig := newServerConfig(viper.GetViper(), store)
+	webConfig.AS = account.NewService(store.Accounts())
+	webConfig.PAS = playerauth.NewService(store.DiscordAuths())
+	webConfig.US = user.NewService(store.Users())
+	webConfig.RAS = store.RaidAlerts()
 
 	// Discord server
 	dr := discord.NewRunner(discordToken, store.Accounts(), store.DiscordAuths(),

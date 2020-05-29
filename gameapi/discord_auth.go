@@ -18,7 +18,7 @@ type daAuthUpserter interface {
 }
 
 type daUserGetter interface {
-	GetByPlayerID(string) (models.User, error)
+	GetByPlayerID(models.PlayerID) (models.User, error)
 }
 
 type discordAuth struct {
@@ -67,7 +67,7 @@ func (da *discordAuth) createDiscordAuth(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	dAuth.PlayerID = fmt.Sprintf("%s:%s", sc.game, dAuth.PlayerID)
+	dAuth.PlayerID = models.PlayerID(fmt.Sprintf("%s:%s", sc.game, dAuth.PlayerID))
 
 	user, err := da.us.GetByPlayerID(dAuth.PlayerID)
 	if err == nil {
@@ -106,7 +106,7 @@ func (da *discordAuth) checkPlayer(w http.ResponseWriter, r *http.Request) {
 	}
 
 	cpLog.Trace("Checking player")
-	_, err = da.us.GetByPlayerID(fmt.Sprintf("%s:%s", sc.game, params["player_id"]))
+	_, err = da.us.GetByPlayerID(models.PlayerID(params["player_id"]).PlayerGameID(sc.game))
 	if err != nil {
 		cpLog.Trace("Player not found")
 		w.WriteHeader(http.StatusNotFound)

@@ -14,16 +14,16 @@ import (
 )
 
 type dmUserStorage interface {
-	GetByDiscordID(snowflake string) (models.User, error)
-	RemovePlayerID(snowflake, playerID string) error
+	GetByDiscordID(models.PlayerDiscordID) (models.User, error)
+	RemovePlayerID(models.PlayerDiscordID, models.PlayerID) error
 }
 
 type dmAuthStorage interface {
-	AddRegisteredPlayerIDs(accountID string, playerIDs []string) error
+	AddRegisteredPlayerIDs(accountID string, playerIDs []models.PlayerID) error
 }
 
 type dmDiscordAccountStorage interface {
-	GetByDiscordID(snowflake string) (models.DiscordAuth, error)
+	GetByDiscordID(models.PlayerDiscordID) (models.DiscordAuth, error)
 }
 
 type dm struct {
@@ -36,6 +36,7 @@ type dm struct {
 func (i dm) process(m discordgo.MessageCreate) string {
 	pLog := log.WithFields(logrus.Fields{"sys": "dm.process()"})
 	message := strings.TrimSpace(m.Content)
+	authorID := models.PlayerDiscordID(m.Author.ID)
 
 	isPIN, err := regexp.MatchString("\\A[0-9]+\\z", message)
 	if err != nil {
@@ -48,7 +49,7 @@ func (i dm) process(m discordgo.MessageCreate) string {
 	}
 
 	if isPIN {
-		return i.validatePIN(message, m.Author.ID)
+		return i.validatePIN(message, authorID)
 	}
 
 	parts := strings.Fields(message)
@@ -68,21 +69,21 @@ func (i dm) process(m discordgo.MessageCreate) string {
 			Other: "status",
 		},
 	}):
-		return i.status(m.Author.ID)
+		return i.status(authorID)
 	case localizer.MustLocalize(&i18n.LocalizeConfig{
 		DefaultMessage: &i18n.Message{
 			ID:    "InstructCommandHelp",
 			Other: "help",
 		},
 	}):
-		return i.help(m.Author.ID)
+		return i.help(authorID)
 	case localizer.MustLocalize(&i18n.LocalizeConfig{
 		DefaultMessage: &i18n.Message{
 			ID:    "InstructCommandUnregister",
 			Other: "unregister",
 		},
 	}):
-		return i.unregister(m.Author.ID, parts[1:])
+		return i.unregister(authorID, parts[1:])
 	}
 
 	return localizer.MustLocalize(&i18n.LocalizeConfig{
@@ -92,15 +93,15 @@ func (i dm) process(m discordgo.MessageCreate) string {
 		}})
 }
 
-func (i dm) status(authorID string) string {
+func (i dm) status(authorID models.PlayerDiscordID) string {
 	u, err := i.us.GetByDiscordID(authorID)
 	if err != nil {
 		return "You are not registered anywhere."
 	}
-	return fmt.Sprintf("Your registered IDs are: %s", strings.Join(u.PlayerIDs, ","))
+	return fmt.Sprintf("Your registered IDs are: %s", strings.Join(u.PlayerIDsAsStrings(), ", "))
 }
 
-func (i dm) unregister(authorID string, parts []string) string {
+func (i dm) unregister(authorID models.PlayerDiscordID, parts []string) string {
 	u, err := i.us.GetByDiscordID(authorID)
 	if err != nil {
 		return "You are not registered anywhere."
@@ -111,14 +112,14 @@ func (i dm) unregister(authorID string, parts []string) string {
 	}
 
 	if parts[0] == "all" {
-		u.PlayerIDs = []string{}
+		u.PlayerIDs = []models.PlayerID{}
 		i.us.RemovePlayerID(u.Snowflake, "all")
 		return "You have been removed from all games."
 	}
 
 	game := parts[0]
 	for _, pID := range u.PlayerIDs {
-		if strings.HasPrefix(pID, fmt.Sprintf("%s:", game)) {
+		if strings.HasPrefix(string(pID), fmt.Sprintf("%s:", game)) {
 			err := i.us.RemovePlayerID(u.Snowflake, pID)
 			if err != nil {
 				// return "Could not remove ID, try again."
@@ -131,11 +132,11 @@ func (i dm) unregister(authorID string, parts []string) string {
 	return fmt.Sprintf("Could not find an ID for game %s.\n%s", game, i.status(authorID))
 }
 
-func (i dm) help(authorID string) string {
+func (i dm) help(authorID models.PlayerDiscordID) string {
 	return messages.DMHelpText()
 }
 
-func (i dm) validatePIN(pin, authorID string) string {
+func (i dm) validatePIN(pin string, authorID models.PlayerDiscordID) string {
 	vpLog := log.WithFields(logrus.Fields{"sys": "dm.validatePIN()"})
 	da, err := i.das.GetByDiscordID(authorID)
 	if err != nil {
@@ -165,7 +166,7 @@ func (i dm) validatePIN(pin, authorID string) string {
 					ID:    "PINAuthenticated",
 					Other: "You have authenticated!",
 				}})
-			err = i.as.AddRegisteredPlayerIDs(da.GuildSnowflake, []string{da.PlayerID})
+			err = i.as.AddRegisteredPlayerIDs(da.GuildSnowflake, []models.PlayerID{da.PlayerID})
 			if err != nil {
 				vpLog.Error(err)
 			}

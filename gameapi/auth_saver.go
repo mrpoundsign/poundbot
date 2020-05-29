@@ -2,21 +2,21 @@ package gameapi
 
 import (
 	"github.com/poundbot/poundbot/pkg/models"
-	"github.com/poundbot/poundbot/storage"
+	"github.com/poundbot/poundbot/pkg/modules/user"
 	"github.com/sirupsen/logrus"
 )
 
 type discordAuthRemover interface {
-	Remove(storage.UserInfoGetter) error
+	Remove(playerID models.PlayerID) error
 }
 
 type userIDGetter interface {
-	GetPlayerID() string
-	GetDiscordID() string
+	GetPlayerID() models.PlayerID
+	GetDiscordID() models.PlayerDiscordID
 }
 
 type userUpserter interface {
-	UpsertPlayer(storage.UserInfoGetter) error
+	UpsertPlayer(user.UserInfoGetter) error
 }
 
 // An AuthSaver saves Discord -> Rust user authentications
@@ -63,7 +63,7 @@ func (a *AuthSaver) Run() {
 				}
 				continue
 			}
-			if err := a.das.Remove(as); err != nil {
+			if err := a.das.Remove(as.GetPlayerID()); err != nil {
 				log.WithError(err).Error("storage error removing DiscordAuth")
 				if as.Ack != nil {
 					rLog.Trace("sending auth failure ACK")

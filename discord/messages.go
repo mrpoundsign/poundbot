@@ -32,7 +32,7 @@ func (r *Runner) messageCreate(s *discordgo.Session, m *discordgo.MessageCreate)
 			d := dm{
 				us:       r.us,
 				as:       r.as,
-				das:      r.das,
+				das:      r.authsRepo,
 				authChan: r.AuthSuccess,
 			}
 			s.ChannelMessageSend(m.ChannelID, d.process(*m))
@@ -55,7 +55,7 @@ func (r *Runner) messageCreate(s *discordgo.Session, m *discordgo.MessageCreate)
 		}
 
 		mcLog.WithField("oID", guild.OwnerID).Info("Setting owner")
-		account.OwnerSnowflake = guild.OwnerID
+		account.OwnerSnowflake = models.PlayerDiscordID(guild.OwnerID)
 		err = r.as.UpsertBase(account.BaseAccount)
 		if err != nil {
 			mcLog.WithError(err).Error("Storage error updating account")
@@ -69,14 +69,14 @@ func (r *Runner) messageCreate(s *discordgo.Session, m *discordgo.MessageCreate)
 	// Detect prefix
 	if strings.HasPrefix(m.Message.Content, account.GetCommandPrefix()) {
 		m.Message.Content = strings.TrimPrefix(m.Message.Content, account.GetCommandPrefix())
-		response = instruct(s.State.User.ID, m.ChannelID, m.Author.ID, m.Content, account, r.as)
+		response = instruct(models.PlayerDiscordID(s.State.User.ID), m.ChannelID, m.Author.ID, m.Content, account, r.as)
 		respond = true
 	}
 
 	// Detect mention
 	for _, mention := range m.Mentions {
 		if mention.ID == s.State.User.ID {
-			response = instruct(s.State.User.ID, m.ChannelID, m.Author.ID, m.Content, account, r.as)
+			response = instruct(models.PlayerDiscordID(s.State.User.ID), m.ChannelID, m.Author.ID, m.Content, account, r.as)
 			respond = true
 		}
 	}
@@ -84,7 +84,7 @@ func (r *Runner) messageCreate(s *discordgo.Session, m *discordgo.MessageCreate)
 	if respond {
 		switch response.responseType {
 		case instructResponsePrivate:
-			_, err = r.sendPrivateMessage(m.Author.ID, "", response.message)
+			_, err = r.sendPrivateMessage(models.PlayerDiscordID(m.Author.ID), "", response.message)
 		case instructResponseChannel:
 			err = r.sendChannelMessage(r.session.State.User.ID, m.ChannelID, response.message)
 		}
@@ -106,18 +106,19 @@ func (r *Runner) messageCreate(s *discordgo.Session, m *discordgo.MessageCreate)
 		csLog := mcLog.WithFields(logrus.Fields{"serverID": server.Key[:4]})
 		for _, cTag := range cTags {
 			csLog.WithFields(logrus.Fields{"t": cTag}).Trace("inserting message")
+			authorSnowflake := models.PlayerDiscordID(m.Author.ID)
 			cm := models.ChatMessage{
 				ServerKey:   server.Key,
 				Tag:         cTag,
 				DisplayName: m.Author.Username,
 				Message:     m.Message.Content,
 				DiscordInfo: models.DiscordInfo{
-					Snowflake:   m.Author.ID,
+					Snowflake:   authorSnowflake,
 					DiscordName: m.Author.String(),
 				},
 			}
 			go func() {
-				user, err := r.us.GetByDiscordID(m.Author.ID)
+				user, err := r.us.GetByDiscordID(authorSnowflake)
 				if err == nil {
 					found, clan := server.UsersClan(user.PlayerIDs)
 					if found {
@@ -238,10 +239,10 @@ func (r *Runner) sendChannelEmbed(userID, channelID, message string, color int) 
 }
 
 // sendPrivateMessage sends or updates a private message to a user
-func (r *Runner) sendPrivateMessage(snowflake, messageID, message string) (string, error) {
+func (r *Runner) sendPrivateMessage(snowflake models.PlayerDiscordID, messageID, message string) (string, error) {
 	spmLog := log.WithFields(logrus.Fields{"sys": "RUN", "ssys": "sendPrivateMessage", "cID": snowflake, "mID": messageID})
 
-	channel, err := r.session.UserChannelCreate(snowflake)
+	channel, err := r.session.UserChannelCreate(snowflake.String())
 
 	if err != nil {
 		spmLog.WithError(err).Error("Error creating user channel")

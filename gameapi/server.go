@@ -9,6 +9,7 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/poundbot/poundbot/pkg/models"
+	"github.com/poundbot/poundbot/pkg/modules/user"
 	"github.com/poundbot/poundbot/storage"
 )
 
@@ -23,11 +24,33 @@ type discordHandler interface {
 	SetRole(models.RoleSet, time.Duration) error
 }
 
+type playerAuthService interface {
+	Upsert(models.DiscordAuth) error
+	Remove(models.PlayerID) error
+}
+
+type userService interface {
+	UpsertPlayer(user.UserInfoGetter) error
+	GetByPlayerID(models.PlayerID) (models.User, error)
+}
+
+type accountService interface {
+	GetByServerKey(serverKey string) (models.Account, error)
+	Touch(serverKey string) error
+
+	AddClan(serverKey string, clan models.Clan) error
+	RemoveClan(serverKey, clanTag string) error
+	SetClans(serverKey string, clans []models.Clan) error
+}
+
 // ServerConfig contains the base Server configuration
 type ServerConfig struct {
 	BindAddr string
 	Port     int
-	Storage  storage.Storage
+	PAS      playerAuthService
+	US       userService
+	AS       accountService
+	RAS      storage.RaidAlertsStore
 }
 
 type ServerChannels struct {
@@ -55,7 +78,7 @@ func NewServer(sc *ServerConfig, dh discordHandler, channels ServerChannels) *Se
 		channels: channels,
 	}
 
-	sa := newServerAuth(sc.Storage.Accounts())
+	sa := newServerAuth(s.sc.AS)
 	r := mux.NewRouter()
 
 	// Handles all /api requests, and sets the server auth handler
@@ -76,19 +99,20 @@ func NewServer(sc *ServerConfig, dh discordHandler, channels ServerChannels) *Se
 func (s *Server) Start() error {
 	// Start the AuthSaver
 	go func() {
-		var newConn = s.sc.Storage.Copy()
-		defer newConn.Close()
+		//playerauth.NewService(newConn.DiscordAuths())
 
-		var as = newAuthSaver(newConn.DiscordAuths(), newConn.Users(), s.channels.AuthSuccess, s.shutdownRequest)
+		var as = newAuthSaver(
+			s.sc.PAS,
+			s.sc.US,
+			s.channels.AuthSuccess,
+			s.shutdownRequest,
+		)
 		as.Run()
 	}()
 
 	// Start the RaidAlerter
 	go func() {
-		var newConn = s.sc.Storage.Copy()
-		defer newConn.Close()
-
-		var ra = newRaidAlerter(newConn.RaidAlerts(), s.dh, s.shutdownRequest)
+		var ra = newRaidAlerter(s.sc.RAS, s.dh, s.shutdownRequest)
 		ra.Run()
 	}()
 

@@ -2,7 +2,6 @@ package models
 
 import (
 	"errors"
-	"fmt"
 	"strings"
 
 	"github.com/globalsign/mgo/bson"
@@ -85,7 +84,7 @@ func (s *AccountServer) SetChannelIDForTag(channel string, tag string) (changed 
 }
 
 // UsersClan returns the clan for a given set of playerIDs
-func (s AccountServer) UsersClan(playerIDs []string) (bool, Clan) {
+func (s AccountServer) UsersClan(playerIDs []PlayerID) (bool, Clan) {
 	for _, clan := range s.Clans {
 		for _, member := range clan.Members {
 			for _, id := range playerIDs {
@@ -105,10 +104,10 @@ type AccountServerChannel struct {
 
 type BaseAccount struct {
 	GuildSnowflake      string
-	OwnerSnowflake      string
+	OwnerSnowflake      PlayerDiscordID
 	CommandPrefix       string
-	AdminSnowflakes     []string `bson:",omitempty"`
-	RegisteredPlayerIDs []string `bson:",omitempty"`
+	AdminSnowflakes     []PlayerDiscordID `bson:",omitempty"`
+	RegisteredPlayerIDs []PlayerID        `bson:",omitempty"`
 }
 
 type Account struct {
@@ -138,18 +137,18 @@ func (a Account) GetCommandPrefix() string {
 }
 
 // GetAdminIDs returns the Discord IDs considered "admins"
-func (a Account) GetAdminIDs() []string {
+func (a Account) GetAdminIDs() []PlayerDiscordID {
 	return append(a.AdminSnowflakes, a.OwnerSnowflake)
 }
 
 // GetRegisteredPlayerIDs returns a list of player IDs
 // for the game requested. These ids are stripped of their
 // prefix (e.g. "rust:1001" would be "1001")
-func (a Account) GetRegisteredPlayerIDs(game string) []string {
-	ids := []string{}
+func (a Account) GetRegisteredPlayerIDs(game string) []PlayerID {
+	ids := []PlayerID{}
 	gamePrefix := game + ":"
 	for _, id := range a.RegisteredPlayerIDs {
-		if strings.HasPrefix(id, gamePrefix) {
+		if strings.HasPrefix(id.String(), gamePrefix) {
 			ids = append(ids, id[len(gamePrefix):])
 		}
 	}
@@ -159,19 +158,19 @@ func (a Account) GetRegisteredPlayerIDs(game string) []string {
 // Clan is a clan from the game
 type Clan struct {
 	Tag        string
-	OwnerID    string
-	Members    []string `bson:",omitempty"`
-	Moderators []string `bson:",omitempty"`
+	OwnerID    PlayerID
+	Members    []PlayerID `bson:",omitempty"`
+	Moderators []PlayerID `bson:",omitempty"`
 }
 
 // SetGame adds game name to all IDs
 func (c *Clan) SetGame(game string) {
-	c.OwnerID = fmt.Sprintf("%s:%s", game, c.OwnerID)
+	c.OwnerID = PlayerID(c.OwnerID)
 	for i := range c.Members {
-		c.Members[i] = fmt.Sprintf("%s:%s", game, c.Members[i])
+		c.Members[i] = c.Members[i].PlayerGameID(game)
 	}
 
 	for i := range c.Moderators {
-		c.Moderators[i] = fmt.Sprintf("%s:%s", game, c.Moderators[i])
+		c.Moderators[i] = c.Moderators[i].PlayerGameID(game)
 	}
 }

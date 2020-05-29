@@ -11,7 +11,7 @@ import (
 )
 
 var baseUser = models.BaseUser{
-	GamesInfo: models.GamesInfo{PlayerIDs: []string{"pid1"}},
+	GamesInfo: models.GamesInfo{PlayerIDs: []models.PlayerID{"pid1"}},
 	DiscordInfo: models.DiscordInfo{
 		Snowflake: "did1",
 	},
@@ -29,7 +29,7 @@ func TestUsers_GetByPlayerID(t *testing.T) {
 	t.Parallel()
 
 	type args struct {
-		gameUserID string
+		gameUserID models.PlayerID
 	}
 	tests := []struct {
 		name    string
@@ -69,15 +69,15 @@ func TestUsers_GetByPlayerID(t *testing.T) {
 }
 
 type player struct {
-	id  string
-	did string
+	id  models.PlayerID
+	did models.PlayerDiscordID
 }
 
-func (p player) GetPlayerID() string {
+func (p player) GetPlayerID() models.PlayerID {
 	return p.id
 }
 
-func (p player) GetDiscordID() string {
+func (p player) GetDiscordID() models.PlayerDiscordID {
 	return p.did
 }
 

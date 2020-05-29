@@ -6,7 +6,6 @@ import (
 	"github.com/globalsign/mgo"
 	"github.com/globalsign/mgo/bson"
 	"github.com/poundbot/poundbot/pkg/models"
-	"github.com/poundbot/poundbot/storage"
 )
 
 // A DiscordAuths implements db.DiscordAuthsStore
@@ -20,7 +19,7 @@ func (d DiscordAuths) GetByDiscordName(discordName string) (models.DiscordAuth, 
 	return da, err
 }
 
-func (d DiscordAuths) GetByDiscordID(snowflake string) (models.DiscordAuth, error) {
+func (d DiscordAuths) GetByDiscordID(snowflake models.PlayerDiscordID) (models.DiscordAuth, error) {
 	var da models.DiscordAuth
 	err := d.collection.Find(bson.M{"snowflake": snowflake}).One(&da)
 	if err != nil {
@@ -30,8 +29,8 @@ func (d DiscordAuths) GetByDiscordID(snowflake string) (models.DiscordAuth, erro
 }
 
 // Remove implements db.DiscordAuthsStore.Remove
-func (d DiscordAuths) Remove(u storage.UserInfoGetter) error {
-	return d.collection.Remove(bson.M{"playerid": u.GetPlayerID()})
+func (d DiscordAuths) Remove(playerID models.PlayerID) error {
+	return d.collection.Remove(bson.M{"playerid": playerID})
 }
 
 // Upsert implements db.DiscordAuthsStore.Upsert

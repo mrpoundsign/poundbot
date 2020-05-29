@@ -6,7 +6,7 @@ import (
 	"github.com/globalsign/mgo"
 	"github.com/globalsign/mgo/bson"
 	"github.com/poundbot/poundbot/pkg/models"
-	"github.com/poundbot/poundbot/storage"
+	"github.com/poundbot/poundbot/pkg/modules/user"
 )
 
 const userPlayerIDsField = "playerids"
@@ -18,26 +18,26 @@ type Users struct {
 }
 
 // Get implements db.UsersStore.Get
-func (u Users) GetByPlayerID(gameUserID string) (models.User, error) {
+func (u Users) GetByPlayerID(gameUserID models.PlayerID) (models.User, error) {
 	var user models.User
 	err := u.collection.Find(bson.M{userPlayerIDsField: gameUserID}).One(&user)
 	return user, err
 }
 
-func (u Users) GetByDiscordID(snowflake string) (models.User, error) {
+func (u Users) GetByDiscordID(snowflake models.PlayerDiscordID) (models.User, error) {
 	var user models.User
 	err := u.collection.Find(bson.M{userSnowflakeField: snowflake}).One(&user)
 	return user, err
 }
 
-func (u Users) GetPlayerIDsByDiscordIDs(snowflakes []string) ([]string, error) {
-	var playerIDs []string
+func (u Users) GetPlayerIDsByDiscordIDs(snowflakes []models.PlayerDiscordID) ([]models.PlayerID, error) {
+	var playerIDs []models.PlayerID
 	err := u.collection.Find(bson.M{userSnowflakeField: bson.M{"$in": snowflakes}}).
 		Distinct(userPlayerIDsField, &playerIDs)
 	return playerIDs, err
 }
 
-func (u Users) UpsertPlayer(info storage.UserInfoGetter) error {
+func (u Users) UpsertPlayer(info user.UserInfoGetter) error {
 	_, err := u.collection.Upsert(
 		bson.M{userSnowflakeField: info.GetDiscordID()},
 		bson.M{
@@ -53,7 +53,7 @@ func (u Users) UpsertPlayer(info storage.UserInfoGetter) error {
 	return err
 }
 
-func (u Users) RemovePlayerID(snowflake, playerID string) error {
+func (u Users) RemovePlayerID(snowflake models.PlayerDiscordID, playerID models.PlayerID) error {
 	if playerID == "all" {
 		err := u.collection.Remove(
 			bson.M{userSnowflakeField: snowflake},

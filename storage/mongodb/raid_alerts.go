@@ -8,20 +8,20 @@ import (
 	"github.com/globalsign/mgo"
 	"github.com/globalsign/mgo/bson"
 	"github.com/poundbot/poundbot/pkg/models"
-	"github.com/poundbot/poundbot/storage"
+	"github.com/poundbot/poundbot/pkg/modules/user"
 )
 
 // A RaidAlerts implements storage.RaidAlertsStore
 type RaidAlerts struct {
 	collection *mgo.Collection
-	users      storage.UsersStore
+	users      user.Service
 }
 
 // AddInfo implements storage.RaidAlertsStore.AddInfo
 func (r RaidAlerts) AddInfo(alertIn, invalidIn time.Duration, ed models.EntityDeath) error {
 	for _, pid := range ed.OwnerIDs {
 		// Checking if the user exists, just bail if not
-		_, err := r.users.GetByPlayerID(pid)
+		_, err := r.users.GetByPlayerID(models.PlayerID(pid))
 		if err != nil {
 			continue
 		}

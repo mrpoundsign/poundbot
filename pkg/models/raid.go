@@ -24,7 +24,7 @@ type RaidInventory struct {
 
 type RaidAlert struct {
 	ID            bson.ObjectId `bson:"_id,omitempty"`
-	PlayerID      string
+	PlayerID      PlayerID
 	ServerName    string
 	ServerKey     string
 	GridPositions []string

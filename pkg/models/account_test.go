@@ -7,7 +7,7 @@ import (
 
 func Benchmark_GetRegisteredPlayerIDs(b *testing.B) {
 	account := Account{}
-	account.RegisteredPlayerIDs = []string{
+	account.RegisteredPlayerIDs = []PlayerID{
 		"game:453645665675876547567545",
 		"game:456756996657657645687765",
 		"game:5647564658899764567657",
@@ -27,9 +27,9 @@ func Benchmark_GetRegisteredPlayerIDs(b *testing.B) {
 }
 
 func TestServer_UsersClan(t *testing.T) {
-	clans := []Clan{{Tag: "FoF", Members: []string{"one", "two"}}}
+	clans := []Clan{{Tag: "FoF", Members: []PlayerID{"one", "two"}}}
 	type args struct {
-		playerIDs []string
+		playerIDs []PlayerID
 	}
 	tests := []struct {
 		name  string
@@ -39,13 +39,13 @@ func TestServer_UsersClan(t *testing.T) {
 	}{
 		{
 			name:  "User is in no clans",
-			args:  args{playerIDs: []string{"three"}},
+			args:  args{playerIDs: []PlayerID{"three"}},
 			want:  false,
 			want1: Clan{},
 		},
 		{
 			name:  "User is in clan",
-			args:  args{playerIDs: []string{"two"}},
+			args:  args{playerIDs: []PlayerID{"two"}},
 			want:  true,
 			want1: clans[0],
 		},
@@ -141,17 +141,17 @@ func TestAccount_GetAdminIDs(t *testing.T) {
 	tests := []struct {
 		name        string
 		baseAccount BaseAccount
-		want        []string
+		want        []PlayerDiscordID
 	}{
 		{
 			name:        "owner only",
 			baseAccount: BaseAccount{OwnerSnowflake: "one"},
-			want:        []string{"one"},
+			want:        []PlayerDiscordID{"one"},
 		},
 		{
 			name:        "owner and admins",
-			baseAccount: BaseAccount{OwnerSnowflake: "one", AdminSnowflakes: []string{"two", "three"}},
-			want:        []string{"two", "three", "one"},
+			baseAccount: BaseAccount{OwnerSnowflake: "one", AdminSnowflakes: []PlayerDiscordID{"two", "three"}},
+			want:        []PlayerDiscordID{"two", "three", "one"},
 		},
 	}
 	for _, tt := range tests {
@@ -169,9 +169,9 @@ func TestAccount_GetAdminIDs(t *testing.T) {
 func TestClan_SetGame(t *testing.T) {
 	type fields struct {
 		Tag        string
-		OwnerID    string
-		Members    []string
-		Moderators []string
+		OwnerID    PlayerID
+		Members    []PlayerID
+		Moderators []PlayerID
 	}
 	type args struct {
 		game string
@@ -207,32 +207,32 @@ func TestAccount_GetRegisteredPlayerIDs(t *testing.T) {
 		name   string
 		fields fields
 		args   args
-		want   []string
+		want   []PlayerID
 	}{
 		{
 			name:   "empty",
 			args:   args{"game"},
 			fields: fields{BaseAccount: BaseAccount{}},
-			want:   []string{},
+			want:   []PlayerID{},
 		},
 		{
 			name: "different game",
 			args: args{"game"},
 			fields: fields{BaseAccount: BaseAccount{
-				RegisteredPlayerIDs: []string{"rust:1234", "rust:2345"},
+				RegisteredPlayerIDs: []PlayerID{"rust:1234", "rust:2345"},
 			}},
-			want: []string{},
+			want: []PlayerID{},
 		},
 		{
 			name: "mixed game",
 			args: args{"game"},
 			fields: fields{BaseAccount: BaseAccount{
-				RegisteredPlayerIDs: []string{
+				RegisteredPlayerIDs: []PlayerID{
 					"rust:1234", "rust:2345",
 					"game:3456", "game:4567",
 				},
 			}},
-			want: []string{"3456", "4567"},
+			want: []PlayerID{"3456", "4567"},
 		},
 	}
 	for _, tt := range tests {

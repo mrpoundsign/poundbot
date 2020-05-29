@@ -1,24 +1,17 @@
 package models
 
-type DiscordInfo struct {
-	DiscordName string
-	Snowflake   string
-}
-
-type Ack func(bool)
-
 type DiscordAuth struct {
 	GuildSnowflake string
-	PlayerID       string
+	PlayerID       PlayerID
 	DiscordInfo    `bson:",inline"`
 	Pin            int
-	Ack            Ack `bson:"-" json:"-"`
+	Ack            func(bool) `bson:"-" json:"-"`
 }
 
-func (d DiscordAuth) GetPlayerID() string {
+func (d DiscordAuth) GetPlayerID() PlayerID {
 	return d.PlayerID
 }
 
-func (d DiscordAuth) GetDiscordID() string {
+func (d DiscordAuth) GetDiscordID() PlayerDiscordID {
 	return d.Snowflake
 }

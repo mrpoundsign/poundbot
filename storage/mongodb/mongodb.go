@@ -9,6 +9,9 @@ import (
 
 	"github.com/globalsign/mgo"
 	pblog "github.com/poundbot/poundbot/log"
+	"github.com/poundbot/poundbot/pkg/modules/account"
+	"github.com/poundbot/poundbot/pkg/modules/playerauth"
+	"github.com/poundbot/poundbot/pkg/modules/user"
 	"github.com/poundbot/poundbot/storage"
 )
 
@@ -96,12 +99,12 @@ func (m *MongoDB) Close() {
 }
 
 // Users implements storage.Storage.Users
-func (m *MongoDB) Users() storage.UsersStore {
+func (m *MongoDB) Users() user.Repo {
 	return Users{collection: m.session.DB(m.dbname).C(usersCollection)}
 }
 
 // DiscordAuths implements storage.Storage.DiscordAuths
-func (m *MongoDB) DiscordAuths() storage.DiscordAuthsStore {
+func (m *MongoDB) DiscordAuths() playerauth.Repo {
 	return DiscordAuths{collection: m.session.DB(m.dbname).C(discordAuthsCollection)}
 }
 
@@ -114,7 +117,7 @@ func (m *MongoDB) RaidAlerts() storage.RaidAlertsStore {
 }
 
 // Accounts implements storage.Storage.ServerAccounts
-func (m *MongoDB) Accounts() storage.AccountsStore {
+func (m *MongoDB) Accounts() account.Repo {
 	return Accounts{collection: m.session.DB(m.dbname).C(accountsCollection)}
 }
 

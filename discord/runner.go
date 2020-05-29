@@ -8,6 +8,9 @@ import (
 
 	"github.com/poundbot/poundbot/pbclock"
 	"github.com/poundbot/poundbot/pkg/models"
+	"github.com/poundbot/poundbot/pkg/modules/account"
+	"github.com/poundbot/poundbot/pkg/modules/playerauth"
+	"github.com/poundbot/poundbot/pkg/modules/user"
 	"github.com/poundbot/poundbot/storage"
 
 	"github.com/bwmarrin/discordgo"
@@ -25,10 +28,10 @@ type ChatQueueStore interface {
 type Runner struct {
 	session         *discordgo.Session
 	cqs             ChatQueueStore
-	as              storage.AccountsStore
+	as              account.Service
 	mls             storage.MessageLocksStore
-	das             storage.DiscordAuthsStore
-	us              storage.UsersStore
+	authsRepo       playerauth.Service
+	us              user.Service
 	token           string
 	status          chan bool
 	chatChan        chan models.ChatMessage
@@ -41,13 +44,13 @@ type Runner struct {
 	shutdown        bool
 }
 
-func NewRunner(token string, as storage.AccountsStore, das storage.DiscordAuthsStore,
-	us storage.UsersStore, mls storage.MessageLocksStore, cqs ChatQueueStore) *Runner {
+func NewRunner(token string, as account.Service, ar playerauth.Service,
+	us user.Service, mls storage.MessageLocksStore, cqs ChatQueueStore) *Runner {
 	return &Runner{
 		cqs:             cqs,
 		mls:             mls,
 		as:              as,
-		das:             das,
+		authsRepo:       ar,
 		us:              us,
 		token:           token,
 		chatChan:        make(chan models.ChatMessage),
@@ -163,7 +166,7 @@ func (r *Runner) runner() {
 							return
 						}
 
-						user, err := r.session.User(raUser.Snowflake)
+						user, err := r.session.User(raUser.Snowflake.String())
 						if err != nil {
 							raLog.WithField("uID", raUser.Snowflake).WithError(err).Error(
 								"Discord user not found trying to send raid alert",
@@ -171,7 +174,7 @@ func (r *Runner) runner() {
 							return
 						}
 
-						id, err := r.sendPrivateMessage(user.ID, raidAlert.MessageID, raidAlert.String())
+						id, err := r.sendPrivateMessage(models.PlayerDiscordID(user.ID), raidAlert.MessageID, raidAlert.String())
 						if err != nil {
 							raLog.WithError(err).Error("could not create private channel to send to user")
 							return
@@ -220,23 +223,22 @@ func (r *Runner) discordAuthHandler(da models.DiscordAuth) {
 	dUser, err := r.getUserByName(da.GuildSnowflake, da.DiscordInfo.DiscordName)
 	if err != nil {
 		dLog.WithError(err).Error("Discord user not found")
-		err = r.das.Remove(da)
+		err = r.authsRepo.Remove(da.GetPlayerID())
 		if err != nil {
 			dLog.WithError(err).Error("Error removing discord auth for PlayerID from the database.")
 		}
 		return
 	}
 
-	da.Snowflake = dUser.ID
+	da.Snowflake = models.PlayerDiscordID(dUser.ID)
 
-	err = r.das.Upsert(da)
+	err = r.authsRepo.Upsert(da)
 	if err != nil {
 		dLog.WithError(err).Error("Error upserting PlayerID ito the database")
 		return
 	}
 
-	_, err = r.sendPrivateMessage(da.Snowflake,
-		"",
+	_, err = r.sendPrivateMessage(da.Snowflake, "",
 		localizer.MustLocalize(&i18n.LocalizeConfig{
 			DefaultMessage: &i18n.Message{
 				ID:    "UserPINPrompt",
@@ -271,7 +273,7 @@ func (r *Runner) ready(s *discordgo.Session, event *discordgo.Ready) {
 
 	guilds := make([]models.BaseAccount, len(s.State.Guilds))
 	for i, guild := range s.State.Guilds {
-		guilds[i] = models.BaseAccount{GuildSnowflake: guild.ID, OwnerSnowflake: guild.OwnerID}
+		guilds[i] = models.BaseAccount{GuildSnowflake: guild.ID, OwnerSnowflake: models.PlayerDiscordID(guild.OwnerID)}
 	}
 	if err := r.as.RemoveNotInDiscordGuildList(guilds); err != nil {
 		log.WithError(err).Error("could not sync discord guilds")

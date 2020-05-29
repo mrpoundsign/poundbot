@@ -7,16 +7,21 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/poundbot/poundbot/pkg/models"
-	"github.com/poundbot/poundbot/storage"
 )
+
+type clanService interface {
+	AddClan(serverKey string, clan models.Clan) error
+	RemoveClan(serverKey, clanTag string) error
+	SetClans(serverKey string, clans []models.Clan) error
+}
 
 type serverClan struct {
 	Tag        string
 	ClanTag    string
 	Owner      string
-	OwnerID    string
-	Members    []string
-	Moderators []string
+	OwnerID    models.PlayerID
+	Members    []models.PlayerID
+	Moderators []models.PlayerID
 }
 
 func (s serverClan) ToClan() models.Clan {
@@ -25,7 +30,7 @@ func (s serverClan) ToClan() models.Clan {
 	c.Moderators = s.Moderators
 	if s.Owner != "" {
 		// RustIO Clan
-		c.OwnerID = s.Owner
+		c.OwnerID = models.PlayerID(s.Owner)
 		c.Tag = s.Tag
 		return c
 	}
@@ -36,12 +41,11 @@ func (s serverClan) ToClan() models.Clan {
 }
 
 type clans struct {
-	as storage.AccountsStore
-	us storage.UsersStore
+	cs clanService
 }
 
-func initClans(api muxFuncHandler, path string, as storage.AccountsStore, us storage.UsersStore) {
-	c := clans{as: as, us: us}
+func initClans(api muxFuncHandler, path string, cs clanService) {
+	c := clans{cs: cs}
 
 	api.HandleFunc(path, c.rootHandler).
 		Methods(http.MethodPut)
@@ -86,7 +90,7 @@ func (c *clans) rootHandler(w http.ResponseWriter, r *http.Request) {
 		clans[i].SetGame(sc.game)
 	}
 
-	err = c.as.SetClans(sc.serverKey, clans)
+	err = c.cs.SetClans(sc.serverKey, clans)
 	if err != nil {
 		rhLog.WithError(err).Error("Error updating clans")
 		handleError(w, models.RESTError{StatusCode: http.StatusInternalServerError, Error: "Could not set clans"})
@@ -115,7 +119,7 @@ func (c *clans) clanHandler(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodDelete:
 		chLog.Infof("Removing clan \"%s\"", tag)
-		err := c.as.RemoveClan(sc.serverKey, tag)
+		err := c.cs.RemoveClan(sc.serverKey, tag)
 		if err != nil {
 			handleError(w, models.RESTError{
 				Error:      "Could not remove clan",
@@ -142,7 +146,7 @@ func (c *clans) clanHandler(w http.ResponseWriter, r *http.Request) {
 
 		clan.SetGame(sc.game)
 
-		err = c.as.AddClan(sc.serverKey, clan)
+		err = c.cs.AddClan(sc.serverKey, clan)
 		if err != nil {
 			handleError(w, models.RESTError{
 				Error:      "Could not add clan",

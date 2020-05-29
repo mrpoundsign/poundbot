@@ -46,9 +46,9 @@ func (s Accounts) UpsertBase(account models.BaseAccount) error {
 	return err
 }
 
-func (s Accounts) Remove(key string) error {
+func (s Accounts) Remove(guildsnowflake string) error {
 	return s.collection.Update(
-		bson.M{accountsKeyField: key},
+		bson.M{accountsKeyField: guildsnowflake},
 		bson.M{"$set": bson.M{"disabled": true}},
 	)
 }
@@ -141,7 +141,7 @@ func (s Accounts) RemoveNotInDiscordGuildList(guilds []models.BaseAccount) error
 	return err
 }
 
-func (s Accounts) SetRegisteredPlayerIDs(accoutID string, playerIDs []string) error {
+func (s Accounts) SetRegisteredPlayerIDs(accoutID string, playerIDs []models.PlayerID) error {
 	return s.collection.Update(
 		bson.M{accountsKeyField: accoutID},
 		bson.M{
@@ -152,7 +152,7 @@ func (s Accounts) SetRegisteredPlayerIDs(accoutID string, playerIDs []string) er
 	)
 }
 
-func (s Accounts) AddRegisteredPlayerIDs(accoutID string, playerIDs []string) error {
+func (s Accounts) AddRegisteredPlayerIDs(accoutID string, playerIDs []models.PlayerID) error {
 	return s.collection.Update(
 		bson.M{accountsKeyField: accoutID},
 		bson.M{
@@ -165,7 +165,7 @@ func (s Accounts) AddRegisteredPlayerIDs(accoutID string, playerIDs []string) er
 	)
 }
 
-func (s Accounts) RemoveRegisteredPlayerIDs(accoutID string, playerIDs []string) error {
+func (s Accounts) RemoveRegisteredPlayerIDs(accoutID string, playerIDs []models.PlayerID) error {
 	return s.collection.Update(
 		bson.M{accountsKeyField: accoutID},
 		bson.M{"$pullAll": bson.M{"registeredplayerids": playerIDs}},
