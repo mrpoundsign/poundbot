@@ -28,12 +28,12 @@ type RaidAlerter struct {
 	rs        raidStore
 	rn        raidNotifier
 	SleepTime time.Duration
-	done      <-chan struct{}
+	done      <-chan interface{}
 	miu       func(ra models.RaiAlertWithMessageChannel, is messageIDSetter)
 }
 
 // NewRaidAlerter constructs a RaidAlerter
-func newRaidAlerter(ral raidStore, rn raidNotifier, done <-chan struct{}) *RaidAlerter {
+func newRaidAlerter(ral raidStore, rn raidNotifier, done <-chan interface{}) *RaidAlerter {
 	return &RaidAlerter{
 		rs:        ral,
 		rn:        rn,

@@ -12,7 +12,7 @@ func TestAuthSaver_Run(t *testing.T) {
 
 	var mockU *mocks.UsersStore
 	var mockDA *mocks.DiscordAuthsStore
-	done := make(chan struct{})
+	done := make(chan interface{})
 	defer close(done)
 
 	tests := []struct {
@@ -56,7 +56,7 @@ func TestAuthSaver_Run(t *testing.T) {
 			var server = tt.a(ch)
 
 			go func() {
-				defer func() { done <- struct{}{} }()
+				defer func() { done <- nil }()
 				defer close(ch)
 				if tt.with != nil {
 					ch <- *tt.with

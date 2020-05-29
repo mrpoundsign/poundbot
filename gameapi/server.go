@@ -40,7 +40,7 @@ type Server struct {
 	http.Server
 	sc              *ServerConfig
 	channels        ServerChannels
-	shutdownRequest chan struct{}
+	shutdownRequest chan interface{}
 	dh              discordHandler
 }
 
@@ -67,7 +67,7 @@ func NewServer(sc *ServerConfig, dh discordHandler, channels ServerChannels) *Se
 
 	s.Handler = r
 
-	s.shutdownRequest = make(chan struct{})
+	s.shutdownRequest = make(chan interface{})
 
 	return &s
 }
@@ -122,7 +122,7 @@ func (s *Server) Stop() {
 			log.WithError(err).Warn("Shutdown request error")
 		}
 	}()
-	s.shutdownRequest <- struct{}{} // AuthSaver
-	s.shutdownRequest <- struct{}{} // RaidAlerter
+	s.shutdownRequest <- nil // AuthSaver
+	s.shutdownRequest <- nil // RaidAlerter
 	wg.Wait()
 }

@@ -24,11 +24,11 @@ type AuthSaver struct {
 	das         discordAuthRemover
 	us          userUpserter
 	authSuccess <-chan models.DiscordAuth
-	done        <-chan struct{}
+	done        <-chan interface{}
 }
 
 // NewAuthSaver creates a new AuthSaver
-func newAuthSaver(da discordAuthRemover, u userUpserter, as <-chan models.DiscordAuth, done <-chan struct{}) *AuthSaver {
+func newAuthSaver(da discordAuthRemover, u userUpserter, as <-chan models.DiscordAuth, done <-chan interface{}) *AuthSaver {
 	return &AuthSaver{
 		das:         da,
 		us:          u,

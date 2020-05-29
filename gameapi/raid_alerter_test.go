@@ -41,7 +41,7 @@ func TestRaidAlerter_Run(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// var hit bool
-			done := make(chan struct{}, 1)
+			done := make(chan interface{}, 1)
 
 			mockRH := &raidHandler{}
 
@@ -49,7 +49,7 @@ func TestRaidAlerter_Run(t *testing.T) {
 
 			mockRA.On("GetReady").
 				Return(func() []models.RaidAlert {
-					done <- struct{}{}
+					done <- nil
 					return tt.raidAlerts
 				}, nil)
 

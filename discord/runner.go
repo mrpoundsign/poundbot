@@ -17,9 +17,14 @@ import (
 
 var iclock = pbclock.Clock
 
+type ChatQueueStore interface {
+	GetGameServerMessage(serverKey, tag string, timeout time.Duration) (message models.ChatMessage, success bool)
+	InsertMessage(message models.ChatMessage) error
+}
+
 type Runner struct {
 	session         *discordgo.Session
-	cqs             storage.ChatQueueStore
+	cqs             ChatQueueStore
 	as              storage.AccountsStore
 	mls             storage.MessageLocksStore
 	das             storage.DiscordAuthsStore
@@ -37,7 +42,7 @@ type Runner struct {
 }
 
 func NewRunner(token string, as storage.AccountsStore, das storage.DiscordAuthsStore,
-	us storage.UsersStore, mls storage.MessageLocksStore, cqs storage.ChatQueueStore) *Runner {
+	us storage.UsersStore, mls storage.MessageLocksStore, cqs ChatQueueStore) *Runner {
 	return &Runner{
 		cqs:             cqs,
 		mls:             mls,

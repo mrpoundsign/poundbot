@@ -30,7 +30,7 @@ var (
 	writeConfig      = flag.Bool("w", false, "Writes a config and exits")
 	writeConfigForce = flag.Bool("init", false, "Forces writing of config and exits\nWARNING! This will destroy your config file")
 	wg               sync.WaitGroup
-	killChan         = make(chan struct{})
+	killChan         = make(chan interface{})
 	log              = pblog.Log
 )
 
@@ -193,7 +193,7 @@ func main() {
 
 	log.Warn("Stopping...")
 	for i := 0; i < servicesCount; i++ {
-		go func() { killChan <- struct{}{} }()
+		go func() { killChan <- nil }()
 	}
 
 	wg.Wait()
