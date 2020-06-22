@@ -71,6 +71,10 @@ func (r RaidAlerts) GetReady() ([]models.RaidAlert, error) {
 			},
 		},
 	).All(&alerts)
+
+	if err == mgo.ErrNotFound {
+		err = nil
+	}
 	return alerts, err
 }
 

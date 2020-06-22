@@ -11,11 +11,18 @@ import (
 
 	"github.com/globalsign/mgo/bson"
 	"github.com/poundbot/poundbot/pkg/models"
-	"github.com/poundbot/poundbot/storage/mocks"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 )
+
+type testRaidAlertAdder struct {
+	added *models.EntityDeath
+}
+
+func (raa *testRaidAlertAdder) AddInfo(alertIn, validUntil time.Duration, ed models.EntityDeath) error {
+	raa.added = &ed
+	return nil
+}
 
 func TestEntityDeath_Handle(t *testing.T) {
 	t.Parallel()
@@ -69,15 +76,9 @@ func TestEntityDeath_Handle(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			var added *models.EntityDeath
-			ras := mocks.RaidAlertsStore{}
-			tt.e.raa = &ras
 
-			ras.On("AddInfo", mock.AnythingOfType("time.Duration"), mock.AnythingOfType("time.Duration"), mock.AnythingOfType("models.EntityDeath")).
-				Return(func(t, v time.Duration, ed models.EntityDeath) error {
-					added = &ed
-					return nil
-				})
+			raa := testRaidAlertAdder{}
+			tt.e.raa = &raa
 
 			rr := httptest.NewRecorder()
 
@@ -97,7 +98,7 @@ func TestEntityDeath_Handle(t *testing.T) {
 			handler.ServeHTTP(rr, req)
 
 			assert.Equal(t, tt.status, rr.Code)
-			assert.Equal(t, tt.ed, added)
+			assert.Equal(t, tt.ed, raa.added)
 			// if tt.log != "" {
 			// 	assert.Equal(t, tt.log, hook.LastEntry().Message, "log was incorrect")
 			// } else {

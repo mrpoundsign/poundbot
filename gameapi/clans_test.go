@@ -12,9 +12,9 @@ func Test_serverClan_ToClan(t *testing.T) {
 		Tag        string
 		ClanTag    string
 		Owner      string
-		OwnerID    string
-		Members    []string
-		Moderators []string
+		OwnerID    models.PlayerID
+		Members    []models.PlayerID
+		Moderators []models.PlayerID
 	}
 	tests := []struct {
 		name   string
@@ -23,13 +23,13 @@ func Test_serverClan_ToClan(t *testing.T) {
 	}{
 		{
 			name:   "RustIO Clan",
-			fields: fields{Tag: "PS", Owner: "1", Members: []string{"1", "2", "3"}, Moderators: []string{"2"}},
-			want:   models.Clan{Tag: "PS", OwnerID: "1", Members: []string{"1", "2", "3"}, Moderators: []string{"2"}},
+			fields: fields{Tag: "PS", Owner: "1", Members: []models.PlayerID{"1", "2", "3"}, Moderators: []models.PlayerID{"2"}},
+			want:   models.Clan{Tag: "PS", OwnerID: "1", Members: []models.PlayerID{"1", "2", "3"}, Moderators: []models.PlayerID{"2"}},
 		},
 		{
 			name:   "Clans Clan",
-			fields: fields{ClanTag: "PS", OwnerID: "1", Members: []string{"1", "2", "3"}, Moderators: []string{"2"}},
-			want:   models.Clan{Tag: "PS", OwnerID: "1", Members: []string{"1", "2", "3"}, Moderators: []string{"2"}},
+			fields: fields{ClanTag: "PS", OwnerID: "1", Members: []models.PlayerID{"1", "2", "3"}, Moderators: []models.PlayerID{"2"}},
+			want:   models.Clan{Tag: "PS", OwnerID: "1", Members: []models.PlayerID{"1", "2", "3"}, Moderators: []models.PlayerID{"2"}},
 		},
 	}
 	for _, tt := range tests {

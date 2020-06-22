@@ -1,4 +1,4 @@
-package gameapi
+package raid
 
 import (
 	"testing"
@@ -9,18 +9,18 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-type raidHandler struct {
+type testRaidHandler struct {
 	RaidAlert *models.RaidAlert
 }
 
-func (rh *raidHandler) RaidNotify(ra models.RaiAlertWithMessageChannel) {
+func (rh *testRaidHandler) RaidNotify(ra models.RaidAlertWithMessageChannel) {
 	rh.RaidAlert = &ra.RaidAlert
 }
 
-func TestRaidAlerter_Run(t *testing.T) {
+func TestAlerter_Run(t *testing.T) {
 	t.Parallel()
 
-	miu := func(ra models.RaiAlertWithMessageChannel, is messageIDSetter) {}
+	miu := func(ra models.RaidAlertWithMessageChannel, is messageIDSetter) {}
 
 	var ra = models.RaidAlert{PlayerID: "1234"}
 
@@ -43,7 +43,7 @@ func TestRaidAlerter_Run(t *testing.T) {
 			// var hit bool
 			done := make(chan interface{}, 1)
 
-			mockRH := &raidHandler{}
+			mockRH := &testRaidHandler{}
 
 			mockRA := mocks.RaidAlertsStore{}
 
@@ -58,7 +58,7 @@ func TestRaidAlerter_Run(t *testing.T) {
 				mockRA.On("Remove", ra).Return(nil).Once()
 			}
 
-			raidAlerter := newRaidAlerter(&mockRA, mockRH, done)
+			raidAlerter := NewAlerter(&mockRA, mockRH, done)
 			raidAlerter.SleepTime = 1 * time.Microsecond
 			raidAlerter.miu = miu
 			raidAlerter.Run()

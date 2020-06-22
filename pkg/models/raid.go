@@ -35,7 +35,7 @@ type RaidAlert struct {
 	NotifyCount   int
 }
 
-type RaiAlertWithMessageChannel struct {
+type RaidAlertWithMessageChannel struct {
 	RaidAlert
 	MessageIDChannel chan string
 }

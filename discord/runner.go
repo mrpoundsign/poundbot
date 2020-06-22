@@ -35,7 +35,7 @@ type Runner struct {
 	token           string
 	status          chan bool
 	chatChan        chan models.ChatMessage
-	raidAlertChan   chan models.RaiAlertWithMessageChannel
+	raidAlertChan   chan models.RaidAlertWithMessageChannel
 	gameMessageChan chan models.GameMessage
 	authChan        chan models.DiscordAuth
 	AuthSuccess     chan models.DiscordAuth
@@ -56,7 +56,7 @@ func NewRunner(token string, as account.Service, ar playerauth.Service,
 		chatChan:        make(chan models.ChatMessage),
 		authChan:        make(chan models.DiscordAuth),
 		AuthSuccess:     make(chan models.DiscordAuth),
-		raidAlertChan:   make(chan models.RaiAlertWithMessageChannel),
+		raidAlertChan:   make(chan models.RaidAlertWithMessageChannel),
 		gameMessageChan: make(chan models.GameMessage),
 		channelsRequest: make(chan models.ServerChannelsRequest),
 		roleSetChan:     make(chan models.RoleSet),
@@ -86,7 +86,7 @@ func (r *Runner) Start() error {
 	return err
 }
 
-func (r Runner) RaidNotify(ra models.RaiAlertWithMessageChannel) {
+func (r Runner) RaidNotify(ra models.RaidAlertWithMessageChannel) {
 	r.raidAlertChan <- ra
 }
 

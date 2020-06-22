@@ -1,4 +1,4 @@
-package gameapi
+package auth
 
 import (
 	"github.com/poundbot/poundbot/pkg/models"
@@ -7,7 +7,7 @@ import (
 )
 
 type discordAuthRemover interface {
-	Remove(playerID models.PlayerID) error
+	Remove(models.PlayerID) error
 }
 
 type userIDGetter interface {
@@ -20,7 +20,7 @@ type userUpserter interface {
 }
 
 // An AuthSaver saves Discord -> Rust user authentications
-type AuthSaver struct {
+type saver struct {
 	das         discordAuthRemover
 	us          userUpserter
 	authSuccess <-chan models.DiscordAuth
@@ -28,8 +28,8 @@ type AuthSaver struct {
 }
 
 // NewAuthSaver creates a new AuthSaver
-func newAuthSaver(da discordAuthRemover, u userUpserter, as <-chan models.DiscordAuth, done <-chan interface{}) *AuthSaver {
-	return &AuthSaver{
+func NewSaver(da discordAuthRemover, u userUpserter, as <-chan models.DiscordAuth, done <-chan interface{}) *saver {
+	return &saver{
 		das:         da,
 		us:          u,
 		authSuccess: as,
@@ -38,43 +38,46 @@ func newAuthSaver(da discordAuthRemover, u userUpserter, as <-chan models.Discor
 }
 
 // Run updates users sent in through the AuthSuccess channel
-func (a *AuthSaver) Run() {
-	rLog := log.WithField("sys", "AUTH")
-	defer rLog.Warn("AuthServer Stopped.")
-	rLog.Info("Starting AuthServer")
+func (a *saver) Run() {
+	defer log.Warn("Auth Server Stopped.")
+
+	log.Info("Starting Auth Server")
+
 	for {
 		select {
-		case as, more := <-a.authSuccess:
+		case da, more := <-a.authSuccess:
 			if !more {
 				continue
 			}
-			rLog = rLog.WithFields(logrus.Fields{
-				"gID":       as.GuildSnowflake,
-				"pID":       as.PlayerID,
-				"discordID": as.Snowflake,
-				"name":      as.DiscordName,
+			rLog := log.WithFields(logrus.Fields{
+				"gID":       da.GuildSnowflake,
+				"pID":       da.PlayerID,
+				"discordID": da.Snowflake,
+				"name":      da.DiscordName,
 			})
-			rLog.WithField("pin", as.Pin).Info("auth success")
-			if err := a.us.UpsertPlayer(as); err != nil {
+
+			rLog.WithField("pin", da.Pin).Info("auth success")
+			if err := a.us.UpsertPlayer(da); err != nil {
 				rLog.WithError(err).Error("storage error saving player")
-				if as.Ack != nil {
+				if da.Ack != nil {
 					rLog.Trace("sending auth failure ACK")
-					as.Ack(false)
-				}
-				continue
-			}
-			if err := a.das.Remove(as.GetPlayerID()); err != nil {
-				log.WithError(err).Error("storage error removing DiscordAuth")
-				if as.Ack != nil {
-					rLog.Trace("sending auth failure ACK")
-					as.Ack(false)
+					da.Ack(false)
 				}
 				continue
 			}
 
-			if as.Ack != nil {
+			if err := a.das.Remove(da.GetPlayerID()); err != nil {
+				log.WithError(err).Error("storage error removing DiscordAuth")
+				if da.Ack != nil {
+					rLog.Trace("sending auth failure ACK")
+					da.Ack(false)
+				}
+				continue
+			}
+
+			if da.Ack != nil {
 				rLog.Trace("sending auth success ACK")
-				as.Ack(true)
+				da.Ack(true)
 			}
 		case <-a.done:
 			return

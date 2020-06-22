@@ -9,6 +9,8 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/poundbot/poundbot/pkg/models"
+	"github.com/poundbot/poundbot/pkg/modules/auth"
+	"github.com/poundbot/poundbot/pkg/modules/raid"
 	"github.com/poundbot/poundbot/pkg/modules/user"
 	"github.com/poundbot/poundbot/storage"
 )
@@ -16,7 +18,7 @@ import (
 const upgradeURL = "https://umod.org/plugins/pound-bot"
 
 type discordHandler interface {
-	RaidNotify(models.RaiAlertWithMessageChannel)
+	RaidNotify(models.RaidAlertWithMessageChannel)
 	AuthDiscord(models.DiscordAuth)
 	SendChatMessage(models.ChatMessage)
 	SendGameMessage(models.GameMessage, time.Duration) error
@@ -101,7 +103,7 @@ func (s *Server) Start() error {
 	go func() {
 		//playerauth.NewService(newConn.DiscordAuths())
 
-		var as = newAuthSaver(
+		var as = auth.NewSaver(
 			s.sc.PAS,
 			s.sc.US,
 			s.channels.AuthSuccess,
@@ -112,7 +114,7 @@ func (s *Server) Start() error {
 
 	// Start the RaidAlerter
 	go func() {
-		var ra = newRaidAlerter(s.sc.RAS, s.dh, s.shutdownRequest)
+		var ra = raid.NewAlerter(s.sc.RAS, s.dh, s.shutdownRequest)
 		ra.Run()
 	}()
 

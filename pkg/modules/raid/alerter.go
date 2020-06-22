@@ -1,14 +1,13 @@
-package gameapi
+package raid
 
 import (
 	"time"
 
-	"github.com/globalsign/mgo"
 	"github.com/poundbot/poundbot/pkg/models"
 )
 
-type raidNotifier interface {
-	RaidNotify(models.RaiAlertWithMessageChannel)
+type notifier interface {
+	RaidNotify(models.RaidAlertWithMessageChannel)
 }
 
 // A raidStore stores raid information
@@ -24,17 +23,17 @@ type messageIDSetter interface {
 }
 
 // A RaidAlerter sends notifications on raids
-type RaidAlerter struct {
+type alerter struct {
 	rs        raidStore
-	rn        raidNotifier
+	rn        notifier
 	SleepTime time.Duration
 	done      <-chan interface{}
-	miu       func(ra models.RaiAlertWithMessageChannel, is messageIDSetter)
+	miu       func(ra models.RaidAlertWithMessageChannel, is messageIDSetter)
 }
 
-// NewRaidAlerter constructs a RaidAlerter
-func newRaidAlerter(ral raidStore, rn raidNotifier, done <-chan interface{}) *RaidAlerter {
-	return &RaidAlerter{
+// NewAlerter constructs an Alerter
+func NewAlerter(ral raidStore, rn notifier, done <-chan interface{}) *alerter {
+	return &alerter{
 		rs:        ral,
 		rn:        rn,
 		done:      done,
@@ -43,7 +42,7 @@ func newRaidAlerter(ral raidStore, rn raidNotifier, done <-chan interface{}) *Ra
 	}
 }
 
-func messageIDUpdate(ra models.RaiAlertWithMessageChannel, is messageIDSetter) {
+func messageIDUpdate(ra models.RaidAlertWithMessageChannel, is messageIDSetter) {
 	raLog := log.WithField("sys", "RALERT")
 	newMessageID, ok := <-ra.MessageIDChannel
 	if !ok {
@@ -60,42 +59,41 @@ func messageIDUpdate(ra models.RaiAlertWithMessageChannel, is messageIDSetter) {
 
 // Run checks for raids that need to be alerted and sends them
 // out through the RaidNotify channel. It runs in a loop.
-func (r *RaidAlerter) Run() {
-	raLog := log.WithField("sys", "RALERT")
-	raLog.Info("Starting")
+func (r *alerter) Run() {
+	log.Info("Starting")
 	for {
 		select {
 		case <-r.done:
-			raLog.Warn("Shutting down")
+			log.Warn("Shutting down")
 			return
 		case <-time.After(r.SleepTime):
 			alerts, err := r.rs.GetReady()
-			if err != nil && err != mgo.ErrNotFound {
-				raLog.WithError(err).Error("could not get raid alert")
+			if err != nil {
+				log.WithError(err).Error("could not get raid alert")
 				continue
 			}
 
 			for _, alert := range alerts {
 				shouldNotify := true
-				raLog.Tracef("Processing alert %s, %d", alert.ID, alert.NotifyCount)
+				log.Tracef("Processing alert %s, %d", alert.ID, alert.NotifyCount)
 
 				// Increment notify count should ensure we're the node that should notify for this action.
 				if err := r.rs.IncrementNotifyCount(alert); err != nil {
-					raLog.WithError(err).Trace("could not increment")
+					log.WithError(err).Trace("could not increment")
 					shouldNotify = false
 				}
 
 				if alert.ValidUntil.Before(time.Now()) {
-					raLog.Trace("removing")
+					log.Trace("removing")
 					if err := r.rs.Remove(alert); err != nil {
-						raLog.Trace("coul not remove")
-						raLog.WithError(err).Error("storage: Could not remove alert")
+						log.Trace("coul not remove")
+						log.WithError(err).Error("storage: Could not remove alert")
 						continue
 					}
 				}
 
 				if shouldNotify {
-					message := models.RaiAlertWithMessageChannel{
+					message := models.RaidAlertWithMessageChannel{
 						RaidAlert:        alert,
 						MessageIDChannel: make(chan string),
 					}
