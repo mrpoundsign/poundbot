@@ -7,35 +7,38 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-type guildCreateAccountStorer interface {
+type guildAccountStorer interface {
 	UpsertBase(models.BaseAccount) error
 	SetRegisteredPlayerIDs(ServerID string, IDs []models.PlayerID) error
 	GetByDiscordGuild(string) (models.Account, error)
 }
 
-type guildCreateUserGetter interface {
+type guildUserGetter interface {
 	GetPlayerIDsByDiscordIDs(snowflakes []models.PlayerDiscordID) ([]models.PlayerID, error)
 }
 
-type guildCreate struct {
-	as guildCreateAccountStorer
-	ug guildCreateUserGetter
+type guildHandler struct {
+	as guildAccountStorer
+	ug guildUserGetter
 }
 
-func newGuildCreate(as guildCreateAccountStorer, ug guildCreateUserGetter) func(*discordgo.Session, *discordgo.GuildCreate) {
-	gc := guildCreate{as: as, ug: ug}
+func newGuildCreate(as guildAccountStorer, ug guildUserGetter) func(*discordgo.Session, *discordgo.GuildCreate) {
+	gc := guildHandler{as: as, ug: ug}
 	return gc.guildCreate
 }
 
-func (g guildCreate) guildCreate(s *discordgo.Session, gc *discordgo.GuildCreate) {
-	gcLog := log.WithFields(logrus.Fields{"sys": "guildCreate", "gID": gc.ID, "guildName": gc.Name})
+func (gh guildHandler) guildCreate(s *discordgo.Session, gc *discordgo.GuildCreate) {
+	gcLog := log.WithFields(logrus.Fields{"sys": "guildHandler", "gID": gc.ID, "guildName": gc.Name})
 
+	log.Trace("++ Loading Members")
 	userIDs := make([]models.PlayerDiscordID, len(gc.Members))
 	for i, member := range gc.Members {
+		log.Tracef("Member: %s", member.User.String())
 		userIDs[i] = models.PlayerDiscordID(member.User.ID)
 	}
+	log.Trace("   Loading Members Done")
 
-	account, err := g.as.GetByDiscordGuild(gc.ID)
+	account, err := gh.as.GetByDiscordGuild(gc.ID)
 	if err != nil {
 		if err != mgo.ErrNotFound {
 			// Some other storage error
@@ -47,13 +50,13 @@ func (g guildCreate) guildCreate(s *discordgo.Session, gc *discordgo.GuildCreate
 		account.OwnerSnowflake = models.PlayerDiscordID(gc.OwnerID)
 	}
 
-	err = g.as.UpsertBase(account.BaseAccount)
+	err = gh.as.UpsertBase(account.BaseAccount)
 	if err != nil {
 		gcLog.WithError(err).Error("Error upserting account")
 		return
 	}
 
-	playerIDs, err := g.ug.GetPlayerIDsByDiscordIDs(userIDs)
+	playerIDs, err := gh.ug.GetPlayerIDsByDiscordIDs(userIDs)
 	if err != nil {
 		gcLog.WithError(err).Error("Error getting playerIDs")
 		return
@@ -63,7 +66,7 @@ func (g guildCreate) guildCreate(s *discordgo.Session, gc *discordgo.GuildCreate
 
 	gcLog.Trace("Adding players")
 
-	err = g.as.SetRegisteredPlayerIDs(account.GuildSnowflake, playerIDs)
+	err = gh.as.SetRegisteredPlayerIDs(account.GuildSnowflake, playerIDs)
 	if err != nil {
 		gcLog.WithError(err).Error("Error setting playerIDs")
 	}
@@ -94,6 +97,7 @@ type guildMemberAdder interface {
 
 func newGuildMemberAdd(uf userFinder, gma guildMemberAdder) func(*discordgo.Session, *discordgo.GuildMemberAdd) {
 	return func(s *discordgo.Session, dgma *discordgo.GuildMemberAdd) {
+		log.Tracef("%s#%s", dgma.User.Username, dgma.User.Discriminator)
 		guildMemberAdd(uf, gma, dgma.GuildID, dgma.Member.User.ID)
 	}
 }

@@ -81,6 +81,7 @@ func instruct(authorID models.PlayerDiscordID, botID, channelID, message string,
 	isOwner := false
 
 	for i := range adminIDs {
+		log.Tracef("authorID: %s, adminID: %s", authorID, adminIDs[i])
 		if authorID == adminIDs[i] {
 			isOwner = true
 			break

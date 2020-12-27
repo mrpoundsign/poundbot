@@ -47,7 +47,7 @@ func (r *Runner) messageCreate(s *discordgo.Session, m *discordgo.MessageCreate)
 	}
 
 	if len(account.OwnerSnowflake) == 0 {
-		mcLog.Info("Guild is missing owner")
+		mcLog.Infof("Guild is missing owner. Created date is %s", account.CreatedAt.String())
 		guild, err := s.Guild(m.GuildID)
 		if err != nil {
 			mcLog.WithError(err).Error("Error getting guild from Discord")
@@ -69,14 +69,14 @@ func (r *Runner) messageCreate(s *discordgo.Session, m *discordgo.MessageCreate)
 	// Detect prefix
 	if strings.HasPrefix(m.Message.Content, account.GetCommandPrefix()) {
 		m.Message.Content = strings.TrimPrefix(m.Message.Content, account.GetCommandPrefix())
-		response = instruct(models.PlayerDiscordID(s.State.User.ID), m.ChannelID, m.Author.ID, m.Content, account, r.as)
+		response = instruct(models.PlayerDiscordID(m.Author.ID), s.State.User.ID, m.ChannelID, m.Content, account, r.as)
 		respond = true
 	}
 
 	// Detect mention
 	for _, mention := range m.Mentions {
 		if mention.ID == s.State.User.ID {
-			response = instruct(models.PlayerDiscordID(s.State.User.ID), m.ChannelID, m.Author.ID, m.Content, account, r.as)
+			response = instruct(models.PlayerDiscordID(m.Author.ID), s.State.User.ID, m.ChannelID, m.Content, account, r.as)
 			respond = true
 		}
 	}

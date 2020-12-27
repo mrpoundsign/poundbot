@@ -10,7 +10,6 @@ import (
 	"github.com/poundbot/poundbot/pkg/models"
 	"github.com/poundbot/poundbot/pkg/modules/account"
 	"github.com/poundbot/poundbot/pkg/modules/playerauth"
-	"github.com/poundbot/poundbot/pkg/modules/user"
 	"github.com/poundbot/poundbot/storage"
 
 	"github.com/bwmarrin/discordgo"
@@ -25,13 +24,20 @@ type ChatQueueStore interface {
 	InsertMessage(message models.ChatMessage) error
 }
 
+type userService interface {
+	GetByPlayerID(models.PlayerID) (models.User, error)
+	GetByDiscordID(models.PlayerDiscordID) (models.User, error)
+	GetPlayerIDsByDiscordIDs(snowflakes []models.PlayerDiscordID) ([]models.PlayerID, error)
+	RemovePlayerID(models.PlayerDiscordID, models.PlayerID) error
+}
+
 type Runner struct {
 	session         *discordgo.Session
 	cqs             ChatQueueStore
 	as              account.Service
 	mls             storage.MessageLocksStore
 	authsRepo       playerauth.Service
-	us              user.Service
+	us              userService
 	token           string
 	status          chan bool
 	chatChan        chan models.ChatMessage
@@ -45,7 +51,7 @@ type Runner struct {
 }
 
 func NewRunner(token string, as account.Service, ar playerauth.Service,
-	us user.Service, mls storage.MessageLocksStore, cqs ChatQueueStore) *Runner {
+	us userService, mls storage.MessageLocksStore, cqs ChatQueueStore) *Runner {
 	return &Runner{
 		cqs:             cqs,
 		mls:             mls,
@@ -66,24 +72,39 @@ func NewRunner(token string, as account.Service, ar playerauth.Service,
 // Start starts the runner
 func (r *Runner) Start() error {
 	session, err := discordgo.New("Bot " + r.token)
-	if err == nil {
-		r.session = session
-		r.session.AddHandler(r.messageCreate)
-		r.session.AddHandler(r.ready)
-		r.session.AddHandler(disconnected(r.status))
-		r.session.AddHandler(r.resumed)
-		r.session.AddHandler(newGuildCreate(r.as, r.us))
-		r.session.AddHandler(newGuildDelete(r.as))
-		r.session.AddHandler(newGuildMemberAdd(r.us, r.as))
-		r.session.AddHandler(newGuildMemberRemove(r.us, r.as))
-
-		r.status = make(chan bool)
-
-		go r.runner()
-
-		connect(session)
+	if err != nil {
+		return err
 	}
-	return err
+
+	r.session = session
+	r.session.Identify.Intents = discordgo.MakeIntent(
+		discordgo.IntentsAllWithoutPrivileged |
+			discordgo.IntentsGuildMembers,
+	)
+	r.session.State.TrackMembers = true
+	r.session.State.TrackChannels = true
+	r.session.AddHandler(r.messageCreate)
+	r.session.AddHandler(ready(r.status))
+	r.session.AddHandler(disconnected(r.status))
+	r.session.AddHandler(r.resumed)
+	r.session.AddHandler(newGuildCreate(r.as, r.us))
+	r.session.AddHandler(newGuildDelete(r.as))
+	r.session.AddHandler(newGuildMemberAdd(r.us, r.as))
+	r.session.AddHandler(newGuildMemberRemove(r.us, r.as))
+
+	r.session.AddHandler(
+		func(s *discordgo.Session, e *discordgo.Event) {
+			log.Tracef("Event: %s", e.Type)
+		},
+	)
+
+	r.status = make(chan bool)
+
+	go r.runner()
+
+	connect(r.session, r.status)
+
+	return nil
 }
 
 func (r Runner) RaidNotify(ra models.RaidAlertWithMessageChannel) {
@@ -200,10 +221,30 @@ func (r *Runner) runner() {
 		}
 	Connecting:
 		for {
-			rLog.Info("Waiting for connected state...")
+			rLog.Info("Waiting for connected state change...")
 			connectedState = <-r.status
+			rLog.WithField("sys", "CONN").Infof("Received connection state: %v", connectedState)
 			if connectedState {
-				rLog.WithField("sys", "CONN").Info("Received connected message")
+
+				rLog.Trace("setting discord status")
+				if err := r.session.UpdateStatus(0, localizer.MustLocalize(&i18n.LocalizeConfig{
+					DefaultMessage: &i18n.Message{
+						ID:    "DiscordStatus",
+						Other: "!pb help",
+					}}),
+				); err != nil {
+					log.WithError(err).Error("failed to update bot status")
+				}
+
+				log.Tracef("Found %d guilds", len(r.session.State.Guilds))
+				guilds := make([]models.BaseAccount, len(r.session.State.Guilds))
+				for i, guild := range r.session.State.Guilds {
+					guilds[i] = models.BaseAccount{GuildSnowflake: guild.ID, OwnerSnowflake: models.PlayerDiscordID(guild.OwnerID)}
+				}
+				if err := r.as.RemoveNotInDiscordGuildList(guilds); err != nil {
+					log.WithError(err).Error("could not sync discord guilds")
+				}
+
 				break Connecting
 			}
 			rLog.WithField("sys", "CONN").Info("Received disconnected message")
@@ -257,30 +298,6 @@ func (r *Runner) resumed(s *discordgo.Session, event *discordgo.Resumed) {
 	r.status <- true
 }
 
-// This function will be called (due to AddHandler above) when the bot receives
-// the "ready" event from Discord.
-func (r *Runner) ready(s *discordgo.Session, event *discordgo.Ready) {
-	log.WithField("sys", "CONN").Info("Connection Ready")
-
-	if err := s.UpdateStatus(0, localizer.MustLocalize(&i18n.LocalizeConfig{
-		DefaultMessage: &i18n.Message{
-			ID:    "DiscordStatus",
-			Other: "!pb help",
-		}}),
-	); err != nil {
-		log.WithError(err).Error("failed to update bot status")
-	}
-
-	guilds := make([]models.BaseAccount, len(s.State.Guilds))
-	for i, guild := range s.State.Guilds {
-		guilds[i] = models.BaseAccount{GuildSnowflake: guild.ID, OwnerSnowflake: models.PlayerDiscordID(guild.OwnerID)}
-	}
-	if err := r.as.RemoveNotInDiscordGuildList(guilds); err != nil {
-		log.WithError(err).Error("could not sync discord guilds")
-	}
-	r.status <- true
-}
-
 // Returns nil user if they don't exist; Returns error if there was a communications error
 func (r *Runner) getUserByName(guildID, name string) (discordgo.User, error) {
 	guild, err := r.session.State.Guild(guildID)
@@ -289,10 +306,11 @@ func (r *Runner) getUserByName(guildID, name string) (discordgo.User, error) {
 	}
 
 	for _, user := range guild.Members {
+		log.Tracef("Checking %s: %s", user.User.String(), name)
 		if strings.ToLower(user.User.String()) == strings.ToLower(name) {
 			return *user.User, nil
 		}
 	}
 
-	return discordgo.User{}, fmt.Errorf("discord user not found %s", name)
+	return discordgo.User{}, fmt.Errorf("discord user not found %s for %s", name, guildID)
 }

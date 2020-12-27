@@ -8,13 +8,16 @@ import (
 	"github.com/globalsign/mgo"
 	"github.com/globalsign/mgo/bson"
 	"github.com/poundbot/poundbot/pkg/models"
-	"github.com/poundbot/poundbot/pkg/modules/user"
 )
+
+type userGetter interface {
+	GetByPlayerID(models.PlayerID) (models.User, error)
+}
 
 // A RaidAlerts implements storage.RaidAlertsStore
 type RaidAlerts struct {
 	collection *mgo.Collection
-	users      user.Service
+	users      userGetter
 }
 
 // AddInfo implements storage.RaidAlertsStore.AddInfo
