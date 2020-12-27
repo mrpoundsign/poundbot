@@ -37,3 +37,7 @@ func (s *Service) UpsertPlayer(info UserInfoGetter) error {
 func (s *Service) RemovePlayerID(snowflake models.PlayerDiscordID, playerID models.PlayerID) error {
 	return s.repo.RemovePlayerID(snowflake, playerID)
 }
+
+func (s *Service) SetGuildUsers(dinfo []models.DiscordInfo, gid string) error {
+	return s.repo.SetGuildUsers(dinfo, gid)
+}

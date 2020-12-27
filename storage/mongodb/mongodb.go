@@ -8,6 +8,7 @@ import (
 	"net/url"
 
 	"github.com/globalsign/mgo"
+	"github.com/globalsign/mgo/bson"
 	pblog "github.com/poundbot/poundbot/log"
 	"github.com/poundbot/poundbot/pkg/modules/account"
 	"github.com/poundbot/poundbot/pkg/modules/playerauth"
@@ -150,9 +151,26 @@ func (m *MongoDB) Init() {
 	})
 
 	userColl.EnsureIndex(mgo.Index{
-		Key:      []string{"playerids"},
-		Unique:   true,
-		DropDups: true,
+		Key:           []string{"playerids"},
+		Unique:        true,
+		DropDups:      true,
+		Name:          "playerid_unique",
+		PartialFilter: bson.M{"playerids": bson.M{"$type": "string"}},
+	})
+
+	userColl.EnsureIndex(mgo.Index{
+		Key:  []string{"guildids"},
+		Name: "guild_ids",
+	})
+
+	userColl.EnsureIndex(mgo.Index{
+		Key:  []string{"discordname", "guildids"},
+		Name: "discord_name_lookup",
+	})
+
+	userColl.EnsureIndex(mgo.Index{
+		Key:  []string{"snowflake", "guildids"},
+		Name: "discord_id_lookup",
 	})
 
 	discordAuthColl.EnsureIndex(mgo.Index{

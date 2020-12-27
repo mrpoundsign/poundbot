@@ -1,6 +1,15 @@
 package models
 
-import "fmt"
+import (
+	"fmt"
+)
+
+func NewUserFromDiscordInfo(d DiscordInfo) User {
+	return User{
+		BaseUser:  BaseUser{DiscordInfo: d},
+		Timestamp: *NewTimestamp(),
+	}
+}
 
 type PlayerID string
 
@@ -52,4 +61,5 @@ type BaseUser struct {
 type User struct {
 	BaseUser  `bson:",inline" json:",inline"`
 	Timestamp `bson:",inline" json:",inline"`
+	GuildIDs  []string `json:"-"`
 }

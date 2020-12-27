@@ -5,11 +5,13 @@ import (
 	"flag"
 	"fmt"
 	"io"
-	"log"
 	"net"
 	"os"
-	"path/filepath"
+	"reflect"
+	"strings"
 	"time"
+
+	log "github.com/sirupsen/logrus"
 
 	migrate "github.com/eminetto/mongo-migrate"
 	"github.com/globalsign/mgo"
@@ -18,7 +20,7 @@ import (
 )
 
 var (
-	configLocation = flag.String("c", ".", "The config.json location")
+	configFile = flag.String("c", "", "The config file")
 )
 
 func main() {
@@ -27,15 +29,29 @@ func main() {
 	}
 	option := os.Args[1]
 
-	viper.SetConfigFile(fmt.Sprintf("%s/config.json", filepath.Clean(*configLocation)))
-	viper.SetDefault("mongo.dial-addr", "mongodb://localhost")
+	viper.SetDefault("mongo.dial", "mongodb://localhost:27017")
 	viper.SetDefault("mongo.database", "poundbot")
-	viper.SetDefault("mongo.ssl.enabled", false)
-	viper.SetDefault("mongo.ssl.insecure", false)
+	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
+	viper.AutomaticEnv()
+
+	if len(*configFile) == 0 {
+		log.Info("using default config locations")
+		viper.SetConfigName("poundbot")
+		viper.SetConfigType("yaml")
+		viper.AddConfigPath(".")
+		viper.AddConfigPath("/etc/poundbot/")
+		viper.AddConfigPath("$HOME/.poundbot/")
+	} else {
+		viper.SetConfigFile(*configFile)
+	}
 
 	err := viper.ReadInConfig() // Find and read the config file
-	if err != nil {             // Handle errors reading the config file
-		panic(fmt.Errorf("fatal error config file: %s", err))
+	if err != nil {
+		if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
+			log.Errorf("Error reading config file: %s,%s", reflect.TypeOf(err), err)
+			os.Exit(1)
+		}
+		log.Info("No config file found. Using defaults and env only.")
 	}
 
 	var sErr error
@@ -72,7 +88,7 @@ func main() {
 	// db := session.DB(viper.GetString("mongo.database"))
 	migrate.SetDatabase(sess.DB(viper.GetString("mongo.database")))
 	migrate.SetMigrationsCollection("migrations")
-	migrate.SetLogger(log.New(os.Stdout, "INFO: ", 0))
+	// migrate.SetLogger(log.Info)
 	switch option {
 	case "new":
 		if len(os.Args) != 3 {

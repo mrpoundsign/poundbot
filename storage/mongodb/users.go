@@ -1,6 +1,7 @@
 package mongodb
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/globalsign/mgo"
@@ -9,8 +10,10 @@ import (
 	"github.com/poundbot/poundbot/pkg/modules/user"
 )
 
+const userDiscordNameField = "discordname"
 const userPlayerIDsField = "playerids"
 const userSnowflakeField = "snowflake"
+const userGuildsField = "guildids"
 
 // A Users implements db.UsersStore
 type Users struct {
@@ -71,4 +74,43 @@ func (u Users) RemovePlayerID(snowflake models.PlayerDiscordID, playerID models.
 		},
 	)
 	return err
+}
+
+// SetGuildUsers updates users discord info for the given guild
+func (u Users) SetGuildUsers(dinfo []models.DiscordInfo, gid string) error {
+	pids := make([]models.PlayerDiscordID, len(dinfo))
+	for i, d := range dinfo {
+		pids[i] = d.Snowflake
+		_, err := u.collection.Upsert(
+			bson.M{userSnowflakeField: d.Snowflake},
+			bson.M{
+				"$setOnInsert": bson.M{
+					userSnowflakeField:   d.Snowflake,
+					userDiscordNameField: d.DiscordName,
+					userPlayerIDsField:   []string{},
+					"createdat":          time.Now().UTC(),
+					"updatedat":          time.Now().UTC(),
+				},
+				"$addToSet": bson.M{userGuildsField: gid},
+			},
+		)
+
+		if err != nil {
+			return fmt.Errorf("setguildplayers: could not update user: %w", err)
+		}
+	}
+
+	_, err := u.collection.UpdateAll(
+		bson.M{
+			userSnowflakeField: bson.M{"$nin": pids},
+			userGuildsField:    gid,
+		},
+		bson.M{"$pull": bson.M{userGuildsField: gid}},
+	)
+
+	if err != nil {
+		return fmt.Errorf("setguildplayers: could remove users: %w", err)
+	}
+
+	return nil
 }

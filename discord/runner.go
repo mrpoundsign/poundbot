@@ -29,6 +29,7 @@ type userService interface {
 	GetByDiscordID(models.PlayerDiscordID) (models.User, error)
 	GetPlayerIDsByDiscordIDs(snowflakes []models.PlayerDiscordID) ([]models.PlayerID, error)
 	RemovePlayerID(models.PlayerDiscordID, models.PlayerID) error
+	SetGuildUsers(dinfo []models.DiscordInfo, gid string) error
 }
 
 type Runner struct {
@@ -163,6 +164,7 @@ func (r *Runner) runner() {
 	for {
 		if connectedState {
 			rLog.Info("Waiting for messages.")
+
 		Reading:
 			for {
 				select {

@@ -1,6 +1,9 @@
 package discord
 
 import (
+	"fmt"
+	"time"
+
 	"github.com/bwmarrin/discordgo"
 	"github.com/globalsign/mgo"
 	"github.com/poundbot/poundbot/pkg/models"
@@ -13,28 +16,81 @@ type guildAccountStorer interface {
 	GetByDiscordGuild(string) (models.Account, error)
 }
 
-type guildUserGetter interface {
-	GetPlayerIDsByDiscordIDs(snowflakes []models.PlayerDiscordID) ([]models.PlayerID, error)
+type guildUserStorer interface {
+	GetPlayerIDsByDiscordIDs([]models.PlayerDiscordID) ([]models.PlayerID, error)
+	SetGuildUsers(dinfo []models.DiscordInfo, gid string) error
 }
+
+// type guildUserListGetter inferace {
+
+// }
 
 type guildHandler struct {
 	as guildAccountStorer
-	ug guildUserGetter
+	ug guildUserStorer
 }
 
-func newGuildCreate(as guildAccountStorer, ug guildUserGetter) func(*discordgo.Session, *discordgo.GuildCreate) {
+func newGuildCreate(as guildAccountStorer, ug guildUserStorer) func(*discordgo.Session, *discordgo.GuildCreate) {
 	gc := guildHandler{as: as, ug: ug}
 	return gc.guildCreate
 }
 
+func getGuildMembers(gid string, s *discordgo.Session) ([]models.DiscordInfo, error) {
+	dinfo := []models.DiscordInfo{}
+	uid := ""
+
+	for {
+		log.Tracef("Finding from %s", uid)
+		g, err := s.GuildMembers(gid, uid, 1000)
+		if err != nil {
+			log.Printf("Could not read players for gid %s at %s", gid, uid)
+			return dinfo, fmt.Errorf("could not read players for gid %s at \"%s\": %w", gid, uid, err)
+		}
+
+		log.Tracef("Found %d", len(g))
+
+		if len(g) == 0 {
+			log.Tracef("Exiting user list")
+			break
+		}
+
+		newUsers := make([]models.DiscordInfo, len(g))
+		for i, u := range g {
+			newUsers[i] = models.DiscordInfo{
+				DiscordName: fmt.Sprintf("%s#%s", u.User.Username, u.User.Discriminator),
+				Snowflake:   models.PlayerDiscordID(u.User.ID),
+			}
+			log.Tracef("User: %s - %s:%s", gid, u.User.Username, u.User.ID)
+		}
+
+		dinfo = append(dinfo, newUsers...)
+
+		log.Trace("Finding more...")
+		time.Sleep(100 * time.Microsecond)
+		uid = g[len(g)-1].User.ID
+
+	}
+
+	log.Printf("Found %d players for %s", len(dinfo), gid)
+
+	return dinfo, nil
+}
+
 func (gh guildHandler) guildCreate(s *discordgo.Session, gc *discordgo.GuildCreate) {
-	gcLog := log.WithFields(logrus.Fields{"sys": "guildHandler", "gID": gc.ID, "guildName": gc.Name})
+	gid := gc.ID
+	gcLog := log.WithFields(logrus.Fields{"sys": "guildHandler", "gID": gid, "guildName": gc.Name})
 
 	log.Trace("++ Loading Members")
-	userIDs := make([]models.PlayerDiscordID, len(gc.Members))
-	for i, member := range gc.Members {
-		log.Tracef("Member: %s", member.User.String())
-		userIDs[i] = models.PlayerDiscordID(member.User.ID)
+	members, err := getGuildMembers(gid, s)
+	if err != nil {
+		log.WithError(err).Errorf("Could not get members for guild %s", gid)
+		return
+	}
+
+	userIDs := make([]models.PlayerDiscordID, len(members))
+	for i, member := range members {
+		log.Tracef("    Member: %s:%s", member.DiscordName, member.Snowflake)
+		userIDs[i] = models.PlayerDiscordID(member.Snowflake)
 	}
 	log.Trace("   Loading Members Done")
 
@@ -65,6 +121,11 @@ func (gh guildHandler) guildCreate(s *discordgo.Session, gc *discordgo.GuildCrea
 	gcLog = gcLog.WithField("playerIDs", playerIDs)
 
 	gcLog.Trace("Adding players")
+
+	err = gh.ug.SetGuildUsers(members, account.GuildSnowflake)
+	if err != nil {
+		gcLog.WithError(err).Error("Error setting guild users")
+	}
 
 	err = gh.as.SetRegisteredPlayerIDs(account.GuildSnowflake, playerIDs)
 	if err != nil {
