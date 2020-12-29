@@ -15,21 +15,41 @@ const userPlayerIDsField = "playerids"
 const userSnowflakeField = "snowflake"
 const userGuildsField = "guildids"
 
+type discordUpsertUser struct {
+	DiscordInfo models.DiscordInfo `bson:",inline"`
+	Timestamp   models.Timestamp   `bson:",inline"`
+}
+
+func newDiscordUpsertUser(di models.DiscordInfo) *discordUpsertUser {
+	return &discordUpsertUser{
+		DiscordInfo: di,
+		Timestamp:   *models.NewTimestamp(),
+	}
+}
+
 // A Users implements db.UsersStore
 type Users struct {
 	collection *mgo.Collection
 }
 
-// Get implements db.UsersStore.Get
+// GetByPlayerID get a user by their playerid
 func (u Users) GetByPlayerID(gameUserID models.PlayerID) (models.User, error) {
 	var user models.User
 	err := u.collection.Find(bson.M{userPlayerIDsField: gameUserID}).One(&user)
 	return user, err
 }
 
+// GetByDiscordID gets a user by their discord snowflake
 func (u Users) GetByDiscordID(snowflake models.PlayerDiscordID) (models.User, error) {
 	var user models.User
 	err := u.collection.Find(bson.M{userSnowflakeField: snowflake}).One(&user)
+	return user, err
+}
+
+// GetByDiscordName gets a user by their discord name
+func (u Users) GetByDiscordName(name string) (models.User, error) {
+	var user models.User
+	err := u.collection.Find(bson.M{userDiscordNameField: name}).One(&user)
 	return user, err
 }
 
@@ -77,23 +97,11 @@ func (u Users) RemovePlayerID(snowflake models.PlayerDiscordID, playerID models.
 }
 
 // SetGuildUsers updates users discord info for the given guild
-func (u Users) SetGuildUsers(dinfo []models.DiscordInfo, gid string) error {
-	pids := make([]models.PlayerDiscordID, len(dinfo))
-	for i, d := range dinfo {
-		pids[i] = d.Snowflake
-		_, err := u.collection.Upsert(
-			bson.M{userSnowflakeField: d.Snowflake},
-			bson.M{
-				"$setOnInsert": bson.M{
-					userSnowflakeField:   d.Snowflake,
-					userDiscordNameField: d.DiscordName,
-					userPlayerIDsField:   []string{},
-					"createdat":          time.Now().UTC(),
-					"updatedat":          time.Now().UTC(),
-				},
-				"$addToSet": bson.M{userGuildsField: gid},
-			},
-		)
+func (u Users) SetGuildUsers(dis []models.DiscordInfo, gid string) error {
+	pids := make([]models.PlayerDiscordID, len(dis))
+	for i, di := range dis {
+		pids[i] = di.Snowflake
+		err := u.AddGuildUser(di, gid)
 
 		if err != nil {
 			return fmt.Errorf("setguildplayers: could not update user: %w", err)
@@ -111,6 +119,55 @@ func (u Users) SetGuildUsers(dinfo []models.DiscordInfo, gid string) error {
 	if err != nil {
 		return fmt.Errorf("setguildplayers: could remove users: %w", err)
 	}
+
+	return nil
+}
+
+func (u Users) AddGuildUser(di models.DiscordInfo, gid string) error {
+	_, err := u.collection.Upsert(
+		bson.M{userSnowflakeField: di.Snowflake},
+		bson.M{
+			"$setOnInsert": *newDiscordUpsertUser(di),
+			"$addToSet":    bson.M{userGuildsField: gid},
+		},
+	)
+
+	return err
+}
+
+func (u Users) RemoveGuildUser(di models.DiscordInfo, gid string) error {
+	err := u.collection.Update(
+		bson.M{userSnowflakeField: di.Snowflake},
+		bson.M{
+			"$pull": bson.M{userGuildsField: gid},
+		},
+	)
+
+	return err
+}
+
+func (u Users) RemoveGuild(gid string) error {
+	log.Printf("removing guild %s", gid)
+	err := u.collection.Update(
+		bson.M{userGuildsField: gid},
+		bson.M{
+			"$pull": bson.M{userGuildsField: gid},
+		},
+	)
+
+	if err != nil {
+		return err
+	}
+
+	info, err := u.collection.RemoveAll(
+		bson.M{userGuildsField: []string{}},
+	)
+
+	if err != nil {
+		return err
+	}
+
+	log.Printf("Removed %d of %d users for guild %s", info.Removed, info.Matched, gid)
 
 	return nil
 }

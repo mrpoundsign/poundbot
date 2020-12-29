@@ -3,7 +3,6 @@ package discord
 import (
 	"errors"
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/poundbot/poundbot/pbclock"
@@ -27,9 +26,13 @@ type ChatQueueStore interface {
 type userService interface {
 	GetByPlayerID(models.PlayerID) (models.User, error)
 	GetByDiscordID(models.PlayerDiscordID) (models.User, error)
+	GetByDiscordName(name string) (models.User, error)
 	GetPlayerIDsByDiscordIDs(snowflakes []models.PlayerDiscordID) ([]models.PlayerID, error)
 	RemovePlayerID(models.PlayerDiscordID, models.PlayerID) error
 	SetGuildUsers(dinfo []models.DiscordInfo, gid string) error
+	AddGuildUser(di models.DiscordInfo, gid string) error
+	RemoveGuildUser(di models.DiscordInfo, gid string) error
+	RemoveGuild(gid string) error
 }
 
 type Runner struct {
@@ -88,10 +91,11 @@ func (r *Runner) Start() error {
 	r.session.AddHandler(ready(r.status))
 	r.session.AddHandler(disconnected(r.status))
 	r.session.AddHandler(r.resumed)
-	r.session.AddHandler(newGuildCreate(r.as, r.us))
-	r.session.AddHandler(newGuildDelete(r.as))
 	r.session.AddHandler(newGuildMemberAdd(r.us, r.as))
 	r.session.AddHandler(newGuildMemberRemove(r.us, r.as))
+
+	gh := newGuildHandler(r.as, r.us)
+	gh.registerDiscordHooks(r.session)
 
 	r.session.AddHandler(
 		func(s *discordgo.Session, e *discordgo.Event) {
@@ -273,7 +277,7 @@ func (r *Runner) discordAuthHandler(da models.DiscordAuth) {
 		return
 	}
 
-	da.Snowflake = models.PlayerDiscordID(dUser.ID)
+	da.Snowflake = dUser.Snowflake
 
 	err = r.authsRepo.Upsert(da)
 	if err != nil {
@@ -301,18 +305,16 @@ func (r *Runner) resumed(s *discordgo.Session, event *discordgo.Resumed) {
 }
 
 // Returns nil user if they don't exist; Returns error if there was a communications error
-func (r *Runner) getUserByName(guildID, name string) (discordgo.User, error) {
-	guild, err := r.session.State.Guild(guildID)
+func (r *Runner) getUserByName(guildID, name string) (models.DiscordInfo, error) {
+	u, err := r.us.GetByDiscordName(name)
 	if err != nil {
-		return discordgo.User{}, fmt.Errorf("guild %s not found searching for user %s", guildID, name)
+		return models.DiscordInfo{}, err
 	}
-
-	for _, user := range guild.Members {
-		log.Tracef("Checking %s: %s", user.User.String(), name)
-		if strings.ToLower(user.User.String()) == strings.ToLower(name) {
-			return *user.User, nil
+	for _, gid := range u.GuildIDs {
+		if gid == guildID {
+			return u.DiscordInfo, nil
 		}
 	}
 
-	return discordgo.User{}, fmt.Errorf("discord user not found %s for %s", name, guildID)
+	return models.DiscordInfo{}, fmt.Errorf("user %s is not in guild %s", u.Snowflake, guildID)
 }

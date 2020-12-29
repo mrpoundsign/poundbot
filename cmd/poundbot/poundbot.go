@@ -19,7 +19,6 @@ import (
 	"github.com/poundbot/poundbot/messages"
 	"github.com/poundbot/poundbot/pkg/modules/account"
 	"github.com/poundbot/poundbot/pkg/modules/playerauth"
-	"github.com/poundbot/poundbot/pkg/modules/user"
 	"github.com/poundbot/poundbot/storage/mongodb"
 	"github.com/spf13/viper"
 )
@@ -158,7 +157,7 @@ func main() {
 	webConfig := newServerConfig(viper.GetViper(), store)
 	webConfig.AS = account.NewService(store.Accounts())
 	webConfig.PAS = playerauth.NewService(store.DiscordAuths())
-	webConfig.US = user.NewService(store.Users())
+	webConfig.US = store.Users()
 	webConfig.RAS = store.RaidAlerts()
 
 	// Discord server
