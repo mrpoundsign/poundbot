@@ -249,7 +249,7 @@ type guildMemberRemover interface {
 
 func newGuildMemberRemove(us userStorer, gmr guildMemberRemover) func(*discordgo.Session, *discordgo.GuildMemberRemove) {
 	return func(s *discordgo.Session, dgmr *discordgo.GuildMemberRemove) {
-		guildMemberRemove(us, gmr, dgmr.GuildID, dgmr.Member.User.ID)
+		guildMemberRemove(us, gmr, dgmr.GuildID, dgmr.User.ID)
 	}
 }
 

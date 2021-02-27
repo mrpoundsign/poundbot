@@ -96,8 +96,14 @@ func (i dm) process(m discordgo.MessageCreate) string {
 func (i dm) status(authorID models.PlayerDiscordID) string {
 	u, err := i.us.GetByDiscordID(authorID)
 	if err != nil {
+		log.WithField("aID", authorID).WithError(err).Error("Could not retrieve user")
+		return "Error retreiving user. Please try again later."
+	}
+
+	if len(u.PlayerIDs) == 0 {
 		return "You are not registered anywhere."
 	}
+
 	return fmt.Sprintf("Your registered IDs are: %s", strings.Join(u.PlayerIDsAsStrings(), ", "))
 }
 

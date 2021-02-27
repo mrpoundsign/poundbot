@@ -100,11 +100,6 @@ func (r *alerter) Run() {
 					log.Trace("notifying")
 					r.rn.RaidNotify(message)
 					go r.miu(message, r.rs)
-					if err := r.rs.Remove(alert); err != nil {
-						log.Trace("could not remove")
-						log.WithError(err).Error("storage: Could not remove alert")
-						continue
-					}
 				}
 			}
 		}
